@@ -84,6 +84,8 @@
             padding: 1.5rem;
             width: 100%;
             max-width: 400px;
+            max-height: 90vh; /* Limit height for scrollable content */
+            overflow-y: auto; /* Enable scrolling for modal content */
         }
         .custom-modal-title {
             font-size: 1.5rem;
@@ -130,14 +132,9 @@
             justify-content: center;
             cursor: pointer;
             z-index: 50;
-            opacity: 0;
-            pointer-events: none; /* Prevents interaction when hidden */
-            transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out;
-        }
-
-        .fab-base.show-fab {
-            opacity: 1;
-            pointer-events: auto; /* Allows interaction when shown */
+            opacity: 1; /* Always visible */
+            pointer-events: auto; /* Always interactive */
+            transition: background-color 0.3s ease-in-out;
         }
 
         .fab-base:disabled {
@@ -217,13 +214,15 @@
             <!-- Categories will be dynamically loaded here -->
         </div>
 
-        <!-- Transaction History Section -->
+        <!-- Transaction History Section Trigger -->
         <div class="bg-green-50 p-4 rounded-lg shadow-inner mt-6">
-            <h2 class="text-xl sm:text-2xl font-semibold text-green-800 mb-3">Transaction History</h2>
-            <div id="transactionList" class="space-y-3">
-                <!-- Transactions will be dynamically loaded here -->
-                <p class="text-gray-500" id="noTransactionsMessage">No transactions recorded yet.</p>
-            </div>
+            <h2 class="text-xl sm:text-2xl font-semibold text-green-800 mb-3">View Transaction History</h2>
+            <button
+                id="viewTransactionsButton"
+                class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out"
+            >
+                View All Transactions
+            </button>
         </div>
     </div>
 
@@ -378,6 +377,27 @@
             </form>
         </div>
     </div>
+
+    <!-- Transaction History Modal (New) -->
+    <div id="transactionHistoryModalOverlay" class="custom-modal-overlay hidden">
+        <div class="custom-modal-content">
+            <h2 class="custom-modal-title">Transaction History</h2>
+            <div id="transactionList" class="space-y-3">
+                <!-- Transactions will be dynamically loaded here -->
+                <p class="text-gray-500" id="noTransactionsMessage">No transactions recorded yet.</p>
+            </div>
+            <div class="custom-modal-buttons justify-center">
+                <button
+                    type="button"
+                    id="closeTransactionHistoryModal"
+                    class="custom-modal-button bg-gray-400 hover:bg-gray-500"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -656,7 +676,9 @@
         function updateUI() {
             renderSummary();
             renderCategories();
-            renderTransactions(); // New: Render transaction history
+            // Transactions are now rendered inside the modal, so no direct call here
+            // renderTransactions(); 
+            
             // Update UI element states based on global variables
             const userIdDisplay = document.getElementById('userIdDisplay');
             const userIdValue = document.getElementById('userIdValue');
@@ -1081,6 +1103,17 @@
             editingTransaction = null;
         }
 
+        // --- Transaction History Modal Functions (New) ---
+        function openTransactionHistoryModal() {
+            const modalOverlay = document.getElementById('transactionHistoryModalOverlay');
+            renderTransactions(); // Render transactions inside the modal
+            modalOverlay.classList.remove('hidden');
+        }
+
+        function closeTransactionHistoryModal() {
+            document.getElementById('transactionHistoryModalOverlay').classList.add('hidden');
+        }
+
 
         // --- Event Listeners and Initialization ---
 
@@ -1157,6 +1190,10 @@
                     addTransaction(categoryId, amount, description, date);
                 }
                 closeTransactionModal();
+                // If transaction history modal is open, re-render it
+                if (!document.getElementById('transactionHistoryModalOverlay').classList.contains('hidden')) {
+                    renderTransactions();
+                }
             });
             document.getElementById('cancelTransactionModal').addEventListener('click', closeTransactionModal);
 
@@ -1164,16 +1201,10 @@
             const voiceFab = document.getElementById('voiceFab');
             voiceFab.addEventListener('click', startVoiceInput);
 
-            // Scroll event listener for FAB visibility
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 100) { // Show FABs after scrolling down 100px
-                    voiceFab.classList.add('show-fab');
-                    addExpenseFab.classList.add('show-fab');
-                } else {
-                    voiceFab.classList.remove('show-fab');
-                    addExpenseFab.classList.remove('show-fab');
-                }
-            });
+            // Transaction History Modal Listeners (New)
+            document.getElementById('viewTransactionsButton').addEventListener('click', openTransactionHistoryModal);
+            document.getElementById('closeTransactionHistoryModal').addEventListener('click', closeTransactionHistoryModal);
+
 
             // Category Management Listeners
             document.getElementById('addCategoryModalButton').addEventListener('click', () => openCategoryModal());
