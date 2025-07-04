@@ -75,8 +75,16 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
+            z-index: 900; /* Base z-index for modals */
+        }
+        /* Ensure transaction modal is always on top */
+        #transactionModalOverlay {
+            z-index: 950; /* Higher than history modal */
+        }
+        #confirmModalOverlay { /* For confirm/delete modals */
             z-index: 1000;
         }
+
         .custom-modal-content {
             background-color: #ffffff;
             border-radius: 0.5rem;
@@ -157,6 +165,49 @@
         }
         #addExpenseFab:hover:not(:disabled) {
             background-color: #059669; /* Tailwind green-600 */
+        }
+
+        /* Styles for Collapsible Transaction Sections */
+        .category-section-details {
+            background-color: #f9fafb; /* Tailwind gray-50 */
+            border: 1px solid #e5e7eb; /* Tailwind gray-200 */
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            overflow: hidden; /* Ensures rounded corners apply to content */
+        }
+
+        .category-section-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            background-color: #eff6ff; /* Tailwind blue-50 */
+            font-weight: 600;
+            color: #1f2937; /* Tailwind gray-900 */
+            border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
+        }
+
+        .category-section-summary:hover {
+            background-color: #e0e7ff; /* Tailwind indigo-100 */
+        }
+
+        .category-section-content {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .category-section-summary::-webkit-details-marker {
+            display: none; /* Hide default arrow */
+        }
+        .category-section-summary::before {
+            content: '►'; /* Custom arrow */
+            margin-right: 0.5rem;
+            transition: transform 0.2s;
+        }
+        .category-section-details[open] > .category-section-summary::before {
+            content: '▼'; /* Custom arrow when open */
+            transform: rotate(0deg); /* Reset rotation */
         }
     </style>
 </head>
@@ -383,7 +434,7 @@
         <div class="custom-modal-content">
             <h2 class="custom-modal-title">Transaction History</h2>
             <div id="transactionList" class="space-y-3">
-                <!-- Transactions will be dynamically loaded here -->
+                <!-- Transactions will be dynamically loaded here by category -->
                 <p class="text-gray-500" id="noTransactionsMessage">No transactions recorded yet.</p>
             </div>
             <div class="custom-modal-buttons justify-center">
@@ -629,43 +680,86 @@
                 return;
             }
 
-            // Sort transactions by date, newest first
-            const sortedTransactions = [...currentBudget.transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            // Group transactions by category
+            const transactionsByCategory = currentBudget.transactions.reduce((acc, transaction) => {
+                const categoryId = transaction.categoryId;
+                if (!acc[categoryId]) {
+                    acc[categoryId] = [];
+                }
+                acc[categoryId].push(transaction);
+                return acc;
+            }, {});
 
-            sortedTransactions.forEach(transaction => {
-                const categoryName = currentBudget.categories.find(cat => cat.id === transaction.categoryId)?.name || 'Unknown Category';
-                const transactionCard = document.createElement('div');
-                transactionCard.className = 'bg-white p-3 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-center';
-                transactionCard.innerHTML = `
-                    <div class="flex-1 text-left mb-2 sm:mb-0">
-                        <p class="text-lg font-semibold text-gray-800">${transaction.description || 'No description'}</p>
-                        <p class="text-sm text-gray-600">Category: ${categoryName}</p>
-                        <p class="text-sm text-gray-500">${new Date(transaction.date).toLocaleDateString()}</p>
-                    </div>
-                    <div class="flex-shrink-0 text-right sm:ml-4">
-                        <p class="text-xl font-bold text-red-600 mb-2">${transaction.amount.toFixed(2)} EGP</p>
-                        <div class="flex justify-end gap-2">
-                            <button data-id="${transaction.id}" class="edit-transaction-btn p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition duration-200" title="Edit Transaction">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                            </button>
-                            <button data-id="${transaction.id}" class="delete-transaction-btn p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition duration-200" title="Delete Transaction">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                            </button>
-                        </div>
-                    </div>
+            // Sort categories by their display order (e.g., Needs, Wants, Savings)
+            const sortedCategoryIds = ['Needs', 'Wants', 'Savings'].flatMap(type =>
+                currentBudget.categories
+                    .filter(cat => cat.type === type && transactionsByCategory[cat.id])
+                    .map(cat => cat.id)
+            );
+
+            sortedCategoryIds.forEach(categoryId => {
+                const category = currentBudget.categories.find(cat => cat.id === categoryId);
+                const transactions = transactionsByCategory[categoryId];
+
+                if (!category || !transactions || transactions.length === 0) return; // Skip if no transactions for this category
+
+                const categorySpent = transactions.reduce((sum, t) => sum + t.amount, 0);
+                const categoryRemaining = category.allocated - categorySpent;
+                const remainingColorClass = getOverallRemainingColor(categoryRemaining);
+
+                const detailsElement = document.createElement('details');
+                detailsElement.className = 'category-section-details';
+                detailsElement.open = true; // Keep open by default for now, can be changed later
+
+                const summaryElement = document.createElement('summary');
+                summaryElement.className = 'category-section-summary';
+                summaryElement.innerHTML = `
+                    <span>${category.name} (${category.type})</span>
+                    <span class="${remainingColorClass}">${categorySpent.toFixed(2)} / ${category.allocated.toFixed(2)} EGP</span>
                 `;
-                transactionListContainer.appendChild(transactionCard);
+                detailsElement.appendChild(summaryElement);
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'category-section-content space-y-2';
+
+                // Sort transactions within each category by date, newest first
+                const sortedCategoryTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                sortedCategoryTransactions.forEach(transaction => {
+                    const transactionCard = document.createElement('div');
+                    transactionCard.className = 'bg-white p-3 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-center';
+                    transactionCard.innerHTML = `
+                        <div class="flex-1 text-left mb-2 sm:mb-0">
+                            <p class="text-lg font-semibold text-gray-800">${transaction.description || 'No description'}</p>
+                            <p class="text-sm text-gray-500">${new Date(transaction.date).toLocaleDateString()}</p>
+                        </div>
+                        <div class="flex-shrink-0 text-right sm:ml-4">
+                            <p class="text-xl font-bold text-red-600 mb-2">${transaction.amount.toFixed(2)} EGP</p>
+                            <div class="flex justify-end gap-2">
+                                <button data-id="${transaction.id}" class="edit-transaction-btn p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition duration-200" title="Edit Transaction">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                </button>
+                                <button data-id="${transaction.id}" class="delete-transaction-btn p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition duration-200" title="Delete Transaction">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    contentDiv.appendChild(transactionCard);
+                });
+                detailsElement.appendChild(contentDiv);
+                transactionListContainer.appendChild(detailsElement);
             });
 
-            // Add event listeners for edit/delete transaction buttons
-            document.querySelectorAll('.edit-transaction-btn').forEach(button => {
+            // Re-attach event listeners for edit/delete transaction buttons after rendering
+            document.querySelectorAll('#transactionList .edit-transaction-btn').forEach(button => {
                 button.addEventListener('click', (event) => {
                     const transactionId = event.currentTarget.dataset.id;
                     const transactionToEdit = currentBudget.transactions.find(t => t.id === transactionId);
                     openTransactionModal(transactionToEdit);
                 });
             });
-            document.querySelectorAll('.delete-transaction-btn').forEach(button => {
+            document.querySelectorAll('#transactionList .delete-transaction-btn').forEach(button => {
                 button.addEventListener('click', (event) => {
                     const transactionId = event.currentTarget.dataset.id;
                     handleDeleteTransaction(transactionId);
@@ -773,6 +867,7 @@
 
             const confirmModal = document.createElement('div');
             confirmModal.className = 'custom-modal-overlay';
+            confirmModal.id = 'confirmModalOverlay'; // Add ID for specific z-index
             confirmModal.innerHTML = `
                 <div class="custom-modal-content">
                     <h2 class="custom-modal-title">Confirm Deletion</h2>
@@ -791,6 +886,10 @@
                 updateBudgetInFirestore();
                 showNotification('Transaction deleted successfully!', 'success');
                 confirmModal.remove();
+                // If transaction history modal is open, re-render it
+                if (!document.getElementById('transactionHistoryModalOverlay').classList.contains('hidden')) {
+                    renderTransactions();
+                }
             });
 
             document.getElementById('cancelDeleteTransactionBtn').addEventListener('click', () => {
@@ -992,7 +1091,7 @@
                 );
             } else {
                 // Add new category
-                updatedCategories = [...currentBudget.categories, newCategoryData];
+                updatedCategories = [...currentBudget.categories, { ...newCategoryData, spent: 0 }]; // New categories start with 0 spent
             }
             currentBudget = { ...currentBudget, categories: updatedCategories };
             recalculateCategorySpent(); // Recalculate if category allocations change
@@ -1009,6 +1108,7 @@
 
             const confirmModal = document.createElement('div');
             confirmModal.className = 'custom-modal-overlay';
+            confirmModal.id = 'confirmModalOverlay'; // Add ID for specific z-index
             confirmModal.innerHTML = `
                 <div class="custom-modal-content">
                     <h2 class="custom-modal-title">Confirm Deletion</h2>
@@ -1029,6 +1129,10 @@
                 updateBudgetInFirestore();
                 showNotification('Category deleted successfully!', 'success');
                 confirmModal.remove();
+                // If transaction history modal is open, re-render it
+                if (!document.getElementById('transactionHistoryModalOverlay').classList.contains('hidden')) {
+                    renderTransactions();
+                }
             });
 
             document.getElementById('cancelDeleteCategoryBtn').addEventListener('click', () => {
