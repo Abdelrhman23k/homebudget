@@ -81,7 +81,7 @@
         #transactionModalOverlay {
             z-index: 950; /* Higher than history modal */
         }
-        #confirmModalOverlay, #monthlyHistoryModalOverlay { /* For confirm/delete modals and history modal */
+        #confirmModalOverlay, #monthlyHistoryModalOverlay, #archivedMonthDetailsModalOverlay { /* For confirm/delete modals and history modal */
             z-index: 1000;
         }
 
@@ -95,6 +95,11 @@
             max-height: 90vh; /* Limit height for scrollable content */
             overflow-y: auto; /* Enable scrolling for modal content */
         }
+        /* For the archived month details modal, allow wider content */
+        #archivedMonthDetailsModalOverlay .custom-modal-content {
+            max-width: 700px; /* Wider for better display of details */
+        }
+
         .custom-modal-title {
             font-size: 1.5rem;
             font-weight: bold;
@@ -569,6 +574,33 @@
                 <button
                     type="button"
                     id="closeMonthlyHistoryModal"
+                    class="custom-modal-button bg-gray-400 hover:bg-gray-500"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Archived Month Details Modal (New) -->
+    <div id="archivedMonthDetailsModalOverlay" class="custom-modal-overlay hidden">
+        <div class="custom-modal-content">
+            <h2 id="archivedMonthDetailsTitle" class="custom-modal-title">Archived Budget Details for <span id="archivedMonthName"></span></h2>
+            <div class="mb-4">
+                <p class="text-lg font-semibold text-gray-800">Income: <span id="archivedMonthIncome"></span> EGP</p>
+            </div>
+            <div id="archivedMonthCategoriesSummary" class="space-y-3 mb-6">
+                <!-- Archived categories summary will be loaded here -->
+            </div>
+            <div id="archivedMonthTransactionsList" class="space-y-3">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Transactions:</h3>
+                <p class="text-gray-500" id="noArchivedTransactionsMessage">No transactions recorded for this month.</p>
+                <!-- Archived transactions will be loaded here by category -->
+            </div>
+            <div class="custom-modal-buttons justify-center">
+                <button
+                    type="button"
+                    id="closeArchivedMonthDetailsModal"
                     class="custom-modal-button bg-gray-400 hover:bg-gray-500"
                 >
                     Close
@@ -1531,9 +1563,7 @@
                             const monthId = event.target.dataset.monthId;
                             const selectedMonthData = archivedMonths.find(m => m.id === monthId);
                             if (selectedMonthData) {
-                                console.log(`Details for ${monthId}:`, selectedMonthData.data);
-                                showNotification(`Details for ${monthId} logged to console.`, 'info');
-                                // In a future iteration, this is where you'd render a detailed view or comparison
+                                openArchivedMonthDetailsModal(selectedMonthData.data, monthId); // Open new modal with details
                             }
                         });
                     });
@@ -1549,6 +1579,89 @@
 
         function closeMonthlyHistoryModal() {
             document.getElementById('monthlyHistoryModalOverlay').classList.add('hidden');
+        }
+
+        // --- Archived Month Details Modal Functions (New) ---
+        function openArchivedMonthDetailsModal(monthData, monthId) {
+            const modalOverlay = document.getElementById('archivedMonthDetailsModalOverlay');
+            document.getElementById('archivedMonthName').textContent = monthId; // Display month ID (e.g., "2025-07")
+            document.getElementById('archivedMonthIncome').textContent = monthData.income.toFixed(2);
+
+            const categoriesSummaryContainer = document.getElementById('archivedMonthCategoriesSummary');
+            categoriesSummaryContainer.innerHTML = ''; // Clear previous content
+
+            // Render categories summary
+            monthData.categories.forEach(category => {
+                const categorySummaryDiv = document.createElement('div');
+                categorySummaryDiv.className = 'bg-gray-100 p-2 rounded-md flex justify-between items-center';
+                const remaining = category.allocated - category.spent;
+                let remainingColor = 'text-gray-700';
+                if (remaining < 0) {
+                    remainingColor = 'text-red-600';
+                } else if (remaining <= 0.2 * category.allocated && category.allocated > 0) {
+                    remainingColor = 'text-yellow-600';
+                } else if (remaining >= 0) {
+                    remainingColor = 'text-green-600';
+                }
+
+                categorySummaryDiv.innerHTML = `
+                    <span class="font-medium">${category.name} (${category.type})</span>
+                    <div>
+                        <p class="text-sm text-gray-600">Allocated: ${category.allocated.toFixed(2)} EGP</p>
+                        <p class="text-sm text-gray-600">Spent: ${category.spent.toFixed(2)} EGP</p>
+                        <p class="text-sm font-semibold ${remainingColor}">Remaining: ${remaining.toFixed(2)} EGP</p>
+                    </div>
+                `;
+                categoriesSummaryContainer.appendChild(categorySummaryDiv);
+            });
+
+            const transactionsListContainer = document.getElementById('archivedMonthTransactionsList');
+            transactionsListContainer.innerHTML = '<h3 class="text-xl font-semibold text-gray-700 mb-3">Transactions:</h3>'; // Clear and add title
+
+            if (monthData.transactions && monthData.transactions.length > 0) {
+                document.getElementById('noArchivedTransactionsMessage').classList.add('hidden');
+                // Group transactions by category for display
+                const transactionsByCategory = monthData.transactions.reduce((acc, transaction) => {
+                    const category = monthData.categories.find(cat => cat.id === transaction.categoryId);
+                    const categoryName = category ? category.name : 'Unknown Category';
+                    if (!acc[categoryName]) {
+                        acc[categoryName] = [];
+                    }
+                    acc[categoryName].push(transaction);
+                    return acc;
+                }, {});
+
+                for (const categoryName in transactionsByCategory) {
+                    const categorySection = document.createElement('div');
+                    categorySection.className = 'bg-blue-50 p-3 rounded-md mb-2';
+                    categorySection.innerHTML = `<h4 class="font-semibold text-blue-800 mb-2">${categoryName}</h4>`;
+                    
+                    const sortedCategoryTransactions = [...transactionsByCategory[categoryName]].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                    sortedCategoryTransactions.forEach(transaction => {
+                        const transactionDiv = document.createElement('div');
+                        transactionDiv.className = 'bg-white p-2 rounded-md shadow-sm flex justify-between items-center mb-1';
+                        transactionDiv.innerHTML = `
+                            <div>
+                                <p class="font-medium">${transaction.description || 'No description'}</p>
+                                <p class="text-xs text-gray-500">${new Date(transaction.date).toLocaleDateString()}</p>
+                            </div>
+                            <span class="font-bold text-red-600">${transaction.amount.toFixed(2)} EGP</span>
+                        `;
+                        categorySection.appendChild(transactionDiv);
+                    });
+                    transactionsListContainer.appendChild(categorySection);
+                }
+
+            } else {
+                document.getElementById('noArchivedTransactionsMessage').classList.remove('hidden');
+            }
+
+            modalOverlay.classList.remove('hidden');
+        }
+
+        function closeArchivedMonthDetailsModal() {
+            document.getElementById('archivedMonthDetailsModalOverlay').classList.add('hidden');
         }
 
 
@@ -1647,6 +1760,9 @@
             document.getElementById('viewMonthlyHistoryButton').addEventListener('click', openMonthlyHistoryModal);
             document.getElementById('closeMonthlyHistoryModal').addEventListener('click', closeMonthlyHistoryModal);
             document.getElementById('archiveMonthButton').addEventListener('click', archiveCurrentMonth);
+
+            // Archived Month Details Listeners (New)
+            document.getElementById('closeArchivedMonthDetailsModal').addEventListener('click', closeArchivedMonthDetailsModal);
 
 
             // Category Management Listeners
