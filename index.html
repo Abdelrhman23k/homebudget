@@ -81,7 +81,7 @@
         #transactionModalOverlay {
             z-index: 950; /* Higher than history modal */
         }
-        #confirmModalOverlay { /* For confirm/delete modals */
+        #confirmModalOverlay, #monthlyHistoryModalOverlay { /* For confirm/delete modals and history modal */
             z-index: 1000;
         }
 
@@ -158,6 +158,7 @@
         #voiceFab {
             bottom: 1rem; /* Voice FAB at the very bottom */
             background-color: #2563EB; /* Tailwind blue-600 */
+            position: fixed; /* Ensure it stays fixed */
         }
         #voiceFab:hover:not(:disabled) {
             background-color: #1D4ED8; /* Tailwind blue-700 */
@@ -180,6 +181,21 @@
             animation: pulse 1.5s infinite;
         }
 
+        /* Icon animation within FAB */
+        #voiceFab svg {
+            position: absolute; /* Position icons on top of each other */
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+        #voiceFab svg.icon-show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #voiceFab svg.icon-hide {
+            opacity: 0;
+            transform: scale(0.5); /* Scale down when hidden */
+        }
 
         #addExpenseFab {
             bottom: 6rem; /* Add Expense FAB above Voice FAB (4rem button + 1rem spacing + 1rem bottom margin) */
@@ -232,33 +248,6 @@
             transform: rotate(0deg); /* Reset rotation */
         }
 
-        /* Floating Notification styles */
-        #floatingNotification {
-            position: fixed;
-            right: 5.5rem; /* Adjust based on FAB width + desired spacing */
-            bottom: 2.5rem; /* Adjust to vertically align with FAB */
-            background-color: rgba(0, 0, 0, 0.7); /* Default dark background */
-            color: white;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.25rem;
-            font-size: 0.875rem; /* Small font size */
-            z-index: 60; /* Higher than FABs */
-            opacity: 0;
-            pointer-events: none; /* Prevents interaction when hidden */
-            transition: opacity 0.3s ease-in-out;
-            white-space: nowrap; /* Prevent text wrapping */
-        }
-
-        #floatingNotification.show {
-            opacity: 1;
-        }
-
-        /* Colors for different notification types */
-        #floatingNotification.success { background-color: #10B981; } /* green-500 */
-        #floatingNotification.warning { background-color: #F59E0B; } /* amber-500 */
-        #floatingNotification.danger { background-color: #EF4444; }   /* red-500 */
-        #floatingNotification.info { background-color: #3B82F6; }     /* blue-500 */
-
         /* Overall Progress Bar styles */
         .overall-progress-bar-container {
             width: 100%;
@@ -273,6 +262,44 @@
         .overall-progress-bar-segment {
             height: 100%;
             transition: width 0.5s ease-in-out;
+        }
+
+        /* Inline Notification styles */
+        #inlineNotification {
+            margin-bottom: 1rem; /* Spacing below the notification */
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            opacity: 0; /* Start hidden */
+            transition: opacity 0.3s ease-in-out;
+            text-align: center;
+        }
+
+        #inlineNotification.show {
+            opacity: 1;
+        }
+
+        /* Colors for different notification types */
+        #inlineNotification.success { background-color: #D1FAE5; color: #065F46; } /* green-100, green-900 */
+        #inlineNotification.warning { background-color: #FEF3C7; color: #92400E; } /* amber-100, amber-900 */
+        #inlineNotification.danger { background-color: #FEE2E2; color: #991B1B; }   /* red-100, red-900 */
+        #inlineNotification.info { background-color: #DBEAFE; color: #1E40AF; }     /* blue-100, blue-900 */
+
+        /* Category Progress Bar in Transaction History */
+        .category-history-progress-bar {
+            width: 80px; /* Smaller width for summary bar */
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            display: flex;
+            margin-left: 0.5rem; /* Space between text and bar */
+        }
+
+        .category-history-progress-segment {
+            height: 100%;
+            transition: width 0.5s ease-in-out;
+            border-radius: 5px; /* Apply rounded corners to the segment */
         }
     </style>
 </head>
@@ -307,6 +334,8 @@
         <!-- Add Spending Section (Simplified as buttons are now FABs) -->
         <div class="bg-blue-50 p-4 rounded-lg shadow-inner mb-6">
             <h2 class="text-xl sm:text-2xl font-semibold text-blue-800 mb-3">Add Spending Options</h2>
+            <!-- Inline Notification Area -->
+            <div id="inlineNotification" class="hidden"></div>
             <p class="text-gray-700">Use the floating buttons at the bottom-right of the screen to add expenses or use voice input.</p>
         </div>
 
@@ -328,23 +357,41 @@
 
         <!-- Transaction History Section Trigger -->
         <div class="bg-green-50 p-4 rounded-lg shadow-inner mt-6">
-            <h2 class="text-xl sm:text-2xl font-semibold text-green-800 mb-3">View Transaction History</h2>
-            <button
-                id="viewTransactionsButton"
-                class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out"
-            >
-                View All Transactions
-            </button>
+            <h2 class="text-xl sm:text-2xl font-semibold text-green-800 mb-3">History & Archiving</h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button
+                    id="viewTransactionsButton"
+                    class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out flex-1"
+                >
+                    View All Transactions
+                </button>
+                <button
+                    id="viewMonthlyHistoryButton"
+                    class="px-6 py-3 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 transition duration-300 ease-in-out flex-1"
+                >
+                    View Monthly History
+                </button>
+                <button
+                    id="archiveMonthButton"
+                    class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 ease-in-out flex-1"
+                >
+                    Archive Current Month
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Floating Action Button for Voice Input -->
     <button id="voiceFab" class="fab-base" title="Start Voice Input">
         <!-- Microphone icon (Lucide Icons SVG) -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic">
+        <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic icon-show">
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
             <line x1="12" x2="12" y1="19" y2="22"/>
+        </svg>
+        <!-- Checkmark icon (Lucide Icons SVG) -->
+        <svg id="checkIcon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check icon-hide">
+            <polyline points="20 6 9 17 4 12"/>
         </svg>
     </button>
 
@@ -356,9 +403,6 @@
             <line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
     </button>
-
-    <!-- Floating Notification Area -->
-    <div id="floatingNotification" class="hidden"></div>
 
     <!-- Category Add/Edit Modal (Hidden by default) -->
     <div id="categoryModalOverlay" class="custom-modal-overlay hidden">
@@ -513,12 +557,32 @@
         </div>
     </div>
 
+    <!-- Monthly History Modal (New) -->
+    <div id="monthlyHistoryModalOverlay" class="custom-modal-overlay hidden">
+        <div class="custom-modal-content">
+            <h2 class="custom-modal-title">Monthly Budget History</h2>
+            <div id="monthlyHistoryList" class="space-y-3">
+                <p class="text-gray-500" id="noMonthlyHistoryMessage">No monthly archives found.</p>
+                <!-- Monthly history items will be dynamically loaded here -->
+            </div>
+            <div class="custom-modal-buttons justify-center">
+                <button
+                    type="button"
+                    id="closeMonthlyHistoryModal"
+                    class="custom-modal-button bg-gray-400 hover:bg-gray-500"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
         // --- IMPORTANT: REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIGURATION ---
         // Your actual Firebase project configuration
@@ -556,11 +620,12 @@
                 { id: 'miscWants', name: 'Miscellaneous Wants (incl. Shopping & Entertainment)', allocated: 2260, spent: 0, type: 'Wants', color: '#64748B' }, // Slate
                 { id: 'savings', name: 'Savings', allocated: 4000, spent: 0, type: 'Savings', color: '#A855F7' },        // Purple
             ],
-            transactions: [] // New array to store transaction history
+            transactions: [] // New array to store transaction history for the current month
         };
         let currentUserId = null;
         let isAuthReady = false;
         let isListening = false; // New state for voice input
+        let showVoiceSuccess = false; // New state for voice input success icon
         let microphonePermissionGranted = false; // New state for microphone permission
         let editingCategory = null; // Stores category object when editing
         let editingTransaction = null; // Stores transaction object when editing
@@ -586,25 +651,40 @@
         // --- Utility Functions ---
 
         function showNotification(message, type) {
-            const floatingNotification = document.getElementById('floatingNotification');
-            floatingNotification.textContent = message;
+            console.log("Showing notification:", message, "Type:", type); // Added console log
+            const inlineNotification = document.getElementById('inlineNotification');
+            inlineNotification.textContent = message;
             
             // Clear previous type classes and hide it initially
-            floatingNotification.classList.remove('success', 'warning', 'danger', 'info', 'show');
+            inlineNotification.classList.remove('success', 'warning', 'danger', 'info', 'show');
+            inlineNotification.classList.add('hidden'); // Ensure it's hidden before applying new classes
 
             // Add new type class
-            if (type) {
-                floatingNotification.classList.add(type);
+            if (type === 'success') {
+                inlineNotification.classList.add('success', 'bg-green-100', 'text-green-800');
+            } else if (type === 'warning') {
+                inlineNotification.classList.add('warning', 'bg-yellow-100', 'text-yellow-800');
+            } else if (type === 'danger') {
+                inlineNotification.classList.add('danger', 'bg-red-100', 'text-red-800');
+            } else if (type === 'info') {
+                inlineNotification.classList.add('info', 'bg-blue-100', 'text-blue-800');
             }
             
-            floatingNotification.classList.add('show'); // Show the notification
+            inlineNotification.classList.remove('hidden'); // Show the notification
+            inlineNotification.classList.add('show'); // Trigger opacity transition
             
             // Set a timeout to hide the notification
             setTimeout(clearNotification, 2000); 
         }
 
         function clearNotification() {
-            document.getElementById('floatingNotification').classList.remove('show');
+            const inlineNotification = document.getElementById('inlineNotification');
+            inlineNotification.classList.remove('show'); // Start opacity transition out
+            // Hide completely after transition
+            setTimeout(() => {
+                inlineNotification.classList.add('hidden');
+                inlineNotification.classList.remove('success', 'warning', 'danger', 'info'); // Clean up classes
+            }, 300); // Match CSS transition duration
         }
 
         function getOverallRemainingColor(remaining) {
@@ -789,18 +869,27 @@
                 if (!category || !transactions || transactions.length === 0) return; // Skip if no transactions for this category
 
                 const categorySpent = transactions.reduce((sum, t) => sum + t.amount, 0);
-                const categoryRemaining = category.allocated - categorySpent;
-                const remainingColorClass = getOverallRemainingColor(categoryRemaining);
+                const categoryPercentage = category.allocated > 0 ? (categorySpent / category.allocated) * 100 : 0;
+                let progressBarColor = category.color || '#22C55E'; // Default to category color
+                if (categoryPercentage >= 100) {
+                    progressBarColor = '#EF4444'; // Red if overspent
+                } else if (categoryPercentage >= 80) {
+                    progressBarColor = '#EAB308'; // Yellow if nearing limit
+                }
 
                 const detailsElement = document.createElement('details');
                 detailsElement.className = 'category-section-details';
-                detailsElement.open = true; // Keep open by default for now, can be changed later
+                // Categories are now collapsed by default, so no 'open' attribute
 
                 const summaryElement = document.createElement('summary');
                 summaryElement.className = 'category-section-summary';
                 summaryElement.innerHTML = `
-                    <span>${category.name} (${category.type})</span>
-                    <span class="${remainingColorClass}">${categorySpent.toFixed(2)} / ${category.allocated.toFixed(2)} EGP</span>
+                    <div class="flex items-center">
+                        <span>${category.name} (${category.type})</span>
+                        <div class="category-history-progress-bar">
+                            <div class="category-history-progress-segment" style="width: ${Math.min(100, categoryPercentage)}%; background-color: ${progressBarColor};"></div>
+                        </div>
+                    </div>
                 `;
                 detailsElement.appendChild(summaryElement);
 
@@ -819,7 +908,7 @@
                             <p class="text-sm text-gray-500">${new Date(transaction.date).toLocaleDateString()}</p>
                         </div>
                         <div class="flex-shrink-0 text-right sm:ml-4">
-                            <p class="text-xl font-bold text-red-600 mb-2">${transaction.amount.toFixed(2)} EGP</p>
+                            <p class="text-xl font-bold text-red-600 mb-2">${transaction.amount.toFixed(2)} EGP}</p>
                             <div class="flex justify-end gap-2">
                                 <button data-id="${transaction.id}" class="edit-transaction-btn p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition duration-200" title="Edit Transaction">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
@@ -855,14 +944,14 @@
         function updateUI() {
             renderSummary();
             renderCategories();
-            // Transactions are now rendered inside the modal, so no direct call here
-            // renderTransactions(); 
             
             // Update UI element states based on global variables
             const userIdDisplay = document.getElementById('userIdDisplay');
             const userIdValue = document.getElementById('userIdValue');
-            const voiceFab = document.getElementById('voiceFab'); // Reference to the new FAB
-            const addExpenseFab = document.getElementById('addExpenseFab'); // Reference to the new Add Expense FAB
+            const voiceFab = document.getElementById('voiceFab');
+            const micIcon = document.getElementById('micIcon');
+            const checkIcon = document.getElementById('checkIcon');
+            const addExpenseFab = document.getElementById('addExpenseFab');
 
 
             if (currentUserId) {
@@ -872,13 +961,29 @@
                 userIdDisplay.classList.add('hidden');
             }
 
-            // Voice FAB state
-            voiceFab.disabled = !isAuthReady || isListening || !currentUserId;
+            // Voice FAB state and icon display
+            voiceFab.disabled = !isAuthReady || !currentUserId; // Only disable if not authenticated or no user ID
+            
             if (isListening) {
                 voiceFab.classList.add('listening');
+                micIcon.classList.remove('icon-hide');
+                micIcon.classList.add('icon-show');
+                checkIcon.classList.remove('icon-show');
+                checkIcon.classList.add('icon-hide');
+            } else if (showVoiceSuccess) {
+                voiceFab.classList.remove('listening');
+                micIcon.classList.remove('icon-show');
+                micIcon.classList.add('icon-hide');
+                checkIcon.classList.remove('icon-hide');
+                checkIcon.classList.add('icon-show');
             } else {
                 voiceFab.classList.remove('listening');
+                micIcon.classList.remove('icon-hide');
+                micIcon.classList.add('icon-show');
+                checkIcon.classList.remove('icon-show');
+                checkIcon.classList.add('icon-hide');
             }
+
             // Add Expense FAB state
             addExpenseFab.disabled = !isAuthReady || !currentUserId;
         }
@@ -928,7 +1033,19 @@
             currentBudget.transactions.push(newTransaction);
             recalculateCategorySpent();
             updateBudgetInFirestore();
-            showNotification('Expense added successfully!', 'success');
+            const categoryName = currentBudget.categories.find(cat => cat.id === categoryId)?.name || 'Unknown Category';
+            showNotification(`Expense of ${amount.toFixed(2)} EGP added to ${categoryName}!`, 'success');
+            
+            // Show success icon for voice input
+            if (isListening) { // Only if the transaction was triggered by voice
+                showVoiceSuccess = true;
+                updateUI(); // Update UI to show checkmark
+                setTimeout(() => {
+                    showVoiceSuccess = false;
+                    isListening = false; // Reset listening state
+                    updateUI(); // Revert to microphone
+                }, 1500); // Show checkmark for 1.5 seconds
+            }
         }
 
         function editTransaction(transactionId, newCategoryId, newAmount, newDescription, newDate) {
@@ -943,7 +1060,8 @@
                 };
                 recalculateCategorySpent();
                 updateBudgetInFirestore();
-                showNotification('Expense updated successfully!', 'success');
+                const categoryName = currentBudget.categories.find(cat => cat.id === newCategoryId)?.name || 'Unknown Category';
+                showNotification(`Expense updated to ${newAmount.toFixed(2)} EGP in ${categoryName}!`, 'success');
             } else {
                 showNotification('Transaction not found.', 'warning');
             }
@@ -1028,6 +1146,7 @@
 
             recognition.onstart = () => {
                 isListening = true;
+                showVoiceSuccess = false; // Ensure success icon is hidden on start
                 updateUI();
                 showNotification('Listening for your expense...', 'info');
             };
@@ -1041,8 +1160,7 @@
                     console.error('Error in recognition.onresult:', error);
                     showNotification(`Error processing voice input: ${error.message}.`, 'danger');
                 } finally {
-                    isListening = false; // Ensure listening state is reset
-                    updateUI();
+                    // isListening is now handled by addTransaction for success or onerror/onend for failure
                 }
             };
 
@@ -1050,13 +1168,17 @@
                 console.error('Speech recognition error:', event.error);
                 showNotification(`Voice input error: ${event.error}. Please try again.`, 'danger');
                 isListening = false;
+                showVoiceSuccess = false; // Ensure success icon is off
                 updateUI();
             };
 
             recognition.onend = () => {
-                isListening = false; // Ensure listening state is reset
-                updateUI();
-                // Notification already handled by onresult or onerror
+                // This fires whether successful or not.
+                // Only set isListening to false here if it hasn't been set by success handler
+                if (!showVoiceSuccess) { // If success icon is not shown, means it wasn't a successful command
+                    isListening = false;
+                    updateUI();
+                }
             };
 
             recognition.start();
@@ -1158,9 +1280,12 @@
 
             if (!isNaN(extractedAmount) && extractedAmount > 0) {
                 addTransaction(extractedCategory, extractedAmount, extractedDescription, new Date().toISOString().split('T')[0]);
-                showNotification(`Voice command processed! Added ${extractedAmount.toFixed(2)} EGP to ${currentBudget.categories.find(cat => cat.id === extractedCategory)?.name}.`, 'success');
+                // The addTransaction function now handles its own notification with details and voice success animation
             } else {
                 showNotification(`Could not understand voice command: "${commandText}". Please try again or add manually.`, 'warning');
+                isListening = false; // Reset listening state on failure
+                showVoiceSuccess = false; // Ensure success icon is off
+                updateUI();
             }
         }
 
@@ -1174,19 +1299,22 @@
             }
 
             let updatedCategories;
+            let message;
             if (editingCategory) {
                 // Edit existing category
                 updatedCategories = currentBudget.categories.map(cat =>
                     cat.id === newCategoryData.id ? newCategoryData : cat
                 );
+                message = `Category "${newCategoryData.name}" updated successfully!`;
             } else {
                 // Add new category
                 updatedCategories = [...currentBudget.categories, { ...newCategoryData, spent: 0 }]; // New categories start with 0 spent
+                message = `Category "${newCategoryData.name}" added successfully!`;
             }
             currentBudget = { ...currentBudget, categories: updatedCategories };
             recalculateCategorySpent(); // Recalculate if category allocations change
             updateBudgetInFirestore();
-            showNotification('Category saved successfully!', 'success');
+            showNotification(message, 'success');
             closeCategoryModal();
         }
 
@@ -1212,10 +1340,11 @@
             document.body.appendChild(confirmModal);
 
             document.getElementById('confirmDeleteCategoryBtn').addEventListener('click', () => {
+                const categoryToDelete = currentBudget.categories.find(cat => cat.id === categoryId);
                 currentBudget.categories = currentBudget.categories.filter(t => t.id !== categoryId);
                 recalculateCategorySpent();
                 updateBudgetInFirestore();
-                showNotification('Category deleted successfully!', 'success');
+                showNotification(`Category "${categoryToDelete ? categoryToDelete.name : 'Unknown'}" deleted successfully!`, 'success');
                 confirmModal.remove();
                 // If transaction history modal is open, re-render it
                 if (!document.getElementById('transactionHistoryModalOverlay').classList.contains('hidden')) {
@@ -1304,6 +1433,122 @@
 
         function closeTransactionHistoryModal() {
             document.getElementById('transactionHistoryModalOverlay').classList.add('hidden');
+        }
+
+        // --- Monthly History Functions (New) ---
+        async function archiveCurrentMonth() {
+            if (!currentUserId) {
+                showNotification('User not authenticated. Cannot archive month.', 'warning');
+                return;
+            }
+
+            // Get current date to determine the month being archived (e.g., if today is July 4, 2025, we archive July 2025)
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0'); // getMonth() is 0-indexed
+            const monthYearId = `${year}-${month}`; // e.g., "2025-07"
+
+            // Create a deep copy of the current budget state to archive
+            const budgetToArchive = JSON.parse(JSON.stringify(currentBudget));
+            budgetToArchive.archiveDate = new Date().toISOString(); // Add an archive timestamp
+
+            const monthlyBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/monthly_budgets/${monthYearId}`);
+
+            try {
+                await setDoc(monthlyBudgetDocRef, budgetToArchive);
+                showNotification(`Budget for ${monthYearId} archived successfully!`, 'success');
+
+                // Reset current month's spent amounts and transactions for the new month
+                const resetCategories = currentBudget.categories.map(cat => ({
+                    ...cat,
+                    spent: 0 // Reset spent for all categories
+                }));
+                const newCurrentBudget = {
+                    ...currentBudget,
+                    categories: resetCategories,
+                    transactions: [] // Clear transactions for the new month
+                };
+
+                // Update the current budget in Firestore with reset values
+                const currentBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/budget/current`);
+                await setDoc(currentBudgetDocRef, newCurrentBudget);
+                
+                // Update local state immediately to reflect reset
+                currentBudget = newCurrentBudget;
+                updateUI(); // Re-render UI with reset values
+
+            } catch (error) {
+                console.error("Error archiving month:", error);
+                showNotification(`Error archiving month: ${error.message}`, 'danger');
+            }
+        }
+
+        async function openMonthlyHistoryModal() {
+            if (!currentUserId) {
+                showNotification('User not authenticated. Cannot view monthly history.', 'warning');
+                return;
+            }
+
+            const monthlyHistoryList = document.getElementById('monthlyHistoryList');
+            monthlyHistoryList.innerHTML = ''; // Clear previous list
+            document.getElementById('noMonthlyHistoryMessage').classList.add('hidden'); // Hide no history message initially
+
+            const monthlyBudgetsCollectionRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/monthly_budgets`);
+
+            try {
+                const querySnapshot = await getDocs(monthlyBudgetsCollectionRef);
+                const archivedMonths = [];
+                querySnapshot.forEach((doc) => {
+                    archivedMonths.push({ id: doc.id, data: doc.data() });
+                });
+
+                if (archivedMonths.length === 0) {
+                    document.getElementById('noMonthlyHistoryMessage').classList.remove('hidden');
+                } else {
+                    // Sort months in descending order (newest first)
+                    archivedMonths.sort((a, b) => b.id.localeCompare(a.id));
+
+                    archivedMonths.forEach(monthData => {
+                        const monthItem = document.createElement('div');
+                        monthItem.className = 'bg-gray-100 p-3 rounded-lg shadow-sm flex justify-between items-center';
+                        
+                        const dateParts = monthData.id.split('-'); // e.g., "2025-07"
+                        const monthName = new Date(dateParts[0], dateParts[1] - 1, 1).toLocaleString('en-US', { month: 'long' });
+                        const displayDate = `${monthName} ${dateParts[0]}`;
+
+                        monthItem.innerHTML = `
+                            <span class="font-semibold text-gray-800">${displayDate}</span>
+                            <button data-month-id="${monthData.id}" class="view-month-details-btn px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200">
+                                View Details
+                            </button>
+                        `;
+                        monthlyHistoryList.appendChild(monthItem);
+                    });
+
+                    // Attach event listeners to the new "View Details" buttons
+                    document.querySelectorAll('.view-month-details-btn').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const monthId = event.target.dataset.monthId;
+                            const selectedMonthData = archivedMonths.find(m => m.id === monthId);
+                            if (selectedMonthData) {
+                                console.log(`Details for ${monthId}:`, selectedMonthData.data);
+                                showNotification(`Details for ${monthId} logged to console.`, 'info');
+                                // In a future iteration, this is where you'd render a detailed view or comparison
+                            }
+                        });
+                    });
+                }
+
+                document.getElementById('monthlyHistoryModalOverlay').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error fetching monthly history:", error);
+                showNotification(`Error fetching monthly history: ${error.message}`, 'danger');
+            }
+        }
+
+        function closeMonthlyHistoryModal() {
+            document.getElementById('monthlyHistoryModalOverlay').classList.add('hidden');
         }
 
 
@@ -1397,6 +1642,11 @@
             // Transaction History Modal Listeners (New)
             document.getElementById('viewTransactionsButton').addEventListener('click', openTransactionHistoryModal);
             document.getElementById('closeTransactionHistoryModal').addEventListener('click', closeTransactionHistoryModal);
+
+            // Monthly History Listeners (New)
+            document.getElementById('viewMonthlyHistoryButton').addEventListener('click', openMonthlyHistoryModal);
+            document.getElementById('closeMonthlyHistoryModal').addEventListener('click', closeMonthlyHistoryModal);
+            document.getElementById('archiveMonthButton').addEventListener('click', archiveCurrentMonth);
 
 
             // Category Management Listeners
