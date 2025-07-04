@@ -346,7 +346,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSyAnDwriW_zqBkZDrdLcDrg82f5_UoJzeUE", authDomain: "home-budget-app-c4f05.firebaseapp.com", projectId: "home-budget-app-c4f05" };
@@ -808,13 +808,109 @@
                 historyList.innerHTML = '<p class="text-red-500 text-center">Could not load history.</p>';
             }
         });
+        
+        // --- OPTIMIZED: View Archived Month Details ---
+        document.getElementById('monthlyHistoryList').addEventListener('click', async (e) => {
+            const viewBtn = e.target.closest('.view-archive-btn');
+            if (viewBtn) {
+                const archiveId = viewBtn.dataset.archiveId;
+                const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
+                
+                try {
+                    const docSnap = await getDoc(archiveDocRef);
+                    if (docSnap.exists()) {
+                        const archivedData = docSnap.data();
+                        renderArchivedMonthDetails(archiveId, archivedData);
+                        hideModal('monthlyHistoryModalOverlay');
+                        showModal('archivedMonthDetailsModalOverlay');
+                    } else {
+                        showNotification("Could not find the selected archive.", "danger");
+                    }
+                } catch (error) {
+                    console.error("Error fetching archive details:", error);
+                    showNotification("Failed to load archive details.", "danger");
+                }
+            }
+        });
+
+        function renderArchivedMonthDetails(archiveId, data) {
+            document.getElementById('archivedMonthDetailsTitle').textContent = `Details for ${archiveId}`;
+            const contentEl = document.getElementById('archivedMonthContent');
+            contentEl.innerHTML = '';
+
+            const totalSpent = data.categories.reduce((sum, cat) => sum + cat.spent, 0);
+            const overallRemaining = data.income - totalSpent;
+
+            // Summary
+            const summaryHTML = `
+                <div class="bg-indigo-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-2">Summary</h3>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <p class="text-sm text-gray-600">Income</p>
+                            <p class="font-bold text-lg">${data.income.toFixed(2)} EGP</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Total Spent</p>
+                            <p class="font-bold text-lg text-red-600">${totalSpent.toFixed(2)} EGP</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            contentEl.insertAdjacentHTML('beforeend', summaryHTML);
+
+            // Categories
+            const categoriesEl = document.createElement('div');
+            categoriesEl.innerHTML = `<h3 class="text-xl font-bold text-gray-800 mb-4">Categories</h3>`;
+            const categoriesGrid = document.createElement('div');
+            categoriesGrid.className = 'grid grid-cols-1 gap-4';
+            data.categories.forEach(cat => {
+                categoriesGrid.innerHTML += `
+                    <div class="category-card" style="border-color: ${cat.color || '#ccc'}">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                ${cat.icon || defaultCategoryIcon}
+                                <span class="font-bold">${cat.name}</span>
+                            </div>
+                            <span class="text-sm font-semibold">${cat.spent.toFixed(2)} / ${cat.allocated.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            categoriesEl.appendChild(categoriesGrid);
+            contentEl.appendChild(categoriesEl);
+            
+            // Transactions
+            if (data.transactions && data.transactions.length > 0) {
+                 const transactionsEl = document.createElement('div');
+                 transactionsEl.className = 'mt-6';
+                 transactionsEl.innerHTML = `<h3 class="text-xl font-bold text-gray-800 mb-4">Transactions</h3>`;
+                 const transactionList = document.createElement('ul');
+                 transactionList.className = 'space-y-2';
+                 data.transactions.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(t => {
+                    const categoryName = data.categories.find(c => c.id === t.categoryId)?.name || 'Unknown';
+                    transactionList.innerHTML += `
+                        <li class="flex justify-between items-center bg-gray-50 p-2 rounded-md">
+                            <div>
+                                <p class="font-medium">${t.description || 'Expense'}</p>
+                                <p class="text-sm text-gray-500">${categoryName} - ${new Date(t.date).toLocaleDateString()}</p>
+                            </div>
+                            <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
+                        </li>
+                    `;
+                 });
+                 transactionsEl.appendChild(transactionList);
+                 contentEl.appendChild(transactionsEl);
+            }
+        }
+
 
         // --- Voice Command Functionality ---
         function setupSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 dom.voiceFab.disabled = true;
-                showNotification("Voice recognition not supported in this browser.", "danger");
+                // showNotification("Voice recognition not supported in this browser.", "danger");
                 return;
             }
 
@@ -831,7 +927,6 @@
 
             recognition.onend = () => {
                 dom.voiceFab.classList.remove('listening');
-                clearNotification();
             };
             
             recognition.onerror = (event) => {
