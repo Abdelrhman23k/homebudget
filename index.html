@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,9 +40,6 @@
             display: flex; align-items: center; justify-content: center;
             padding: 1rem; z-index: 900;
         }
-        #transactionModalOverlay { z-index: 950; }
-        #confirmModalOverlay, #monthlyHistoryModalOverlay, #archivedMonthDetailsModalOverlay, #chartModalOverlay { z-index: 1000; }
-
         .custom-modal-content {
             background-color: #ffffff; border-radius: 0.75rem;
             box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1), 0 5px 15px -5px rgba(0, 0, 0, 0.05);
@@ -54,7 +51,6 @@
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
         }
-        #archivedMonthDetailsModalOverlay .custom-modal-content, #chartModalOverlay .custom-modal-content { max-width: 800px; }
         .custom-modal-title {
             font-size: 1.5rem; font-weight: 700; color: #4338ca;
             margin-bottom: 1.5rem; text-align: center;
@@ -86,15 +82,12 @@
         #addExpenseFab { bottom: 6.5rem; background-color: #10B981; }
         #voiceFab { bottom: 1.5rem; background-color: #2563EB; }
 
-        /* Pulsing animation for voiceFab when listening */
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
             70% { box-shadow: 0 0 0 20px rgba(37, 99, 235, 0); }
             100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
         }
-        #voiceFab.listening {
-            animation: pulse 1.5s infinite;
-        }
+        #voiceFab.listening { animation: pulse 1.5s infinite; }
 
         /* Input field styling */
         .form-input {
@@ -116,15 +109,6 @@
         .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 14px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.08); }
         .btn-purple { background-color: #8B5CF6; }
         .btn-purple:hover { background-color: #7C3AED; }
-        .btn-green { background-color: #10B981; }
-        .btn-green:hover { background-color: #059669; }
-        .btn-yellow { background-color: #F59E0B; }
-        .btn-yellow:hover { background-color: #D97706; }
-        .btn-indigo { background-color: #6366F1; }
-        .btn-indigo:hover { background-color: #4F46E5; }
-        .btn-teal { background-color: #14B8A6; }
-        .btn-teal:hover { background-color: #0D9488; }
-
 
         /* Spinner for loading state */
         .spinner {
@@ -136,45 +120,44 @@
 
         /* Inline Notification styles */
         #inlineNotification {
-            margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.75rem;
-            font-size: 1rem; opacity: 0; transform: translateY(-10px);
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 1.5rem; border-radius: 0.75rem;
+            font-size: 1rem; opacity: 0;
             transition: opacity 0.3s ease, transform 0.3s ease;
             text-align: center; font-weight: 500;
+            z-index: 1100;
         }
-        #inlineNotification.show { opacity: 1; transform: translateY(0); }
+        #inlineNotification.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         #inlineNotification.success { background-color: #d1fae5; color: #065f46; }
         #inlineNotification.danger { background-color: #fee2e2; color: #991b1b; }
         #inlineNotification.info { background-color: #dbeafe; color: #1e40af; }
 
-        /* New Category Card Styles */
+        /* Category Card Styles */
         .category-card {
-            background-color: white;
-            border: 1px solid #e5e7eb; /* gray-200 */
-            border-radius: 0.75rem;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+            background-color: white; border: 1px solid #e5e7eb;
+            border-radius: 0.75rem; padding: 1rem; display: flex;
+            flex-direction: column; gap: 0.5rem;
             box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
             border-left-width: 5px;
         }
-        .category-icon {
-            width: 20px;
-            height: 20px;
-            color: #4b5563; /* gray-600 */
-        }
+        .category-icon { width: 20px; height: 20px; color: #4b5563; }
         .progress-bar-container {
-            width: 100%;
-            height: 8px;
-            background-color: #e5e7eb; /* gray-200 */
-            border-radius: 9999px;
-            overflow: hidden;
+            width: 100%; height: 8px; background-color: #e5e7eb;
+            border-radius: 9999px; overflow: hidden;
         }
-        .progress-bar-fill {
-            height: 100%;
-            border-radius: 9999px;
-            transition: width 0.5s ease-in-out;
+        .progress-bar-fill { height: 100%; border-radius: 9999px; transition: width 0.5s ease-in-out; }
+
+        /* Tab Styles */
+        .tab-list { border-bottom: 2px solid #e5e7eb; }
+        .tab-button {
+            padding: 1rem 1.5rem; font-weight: 600; color: #6b7280;
+            border-bottom: 2px solid transparent;
+            transition: color 0.3s ease, border-color 0.3s ease;
         }
+        .tab-button.active { color: #4f46e5; border-color: #4f46e5; }
+        .tab-panel { display: none; padding-top: 1.5rem; }
+        .tab-panel.active { display: block; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -191,45 +174,61 @@
 
         <!-- Main Content (hidden until data loads) -->
         <div id="mainContent" class="hidden">
-            <!-- Overall Summary -->
-            <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm mb-8">
-                <div class="flex justify-between items-center text-lg mb-2">
-                    <div>
-                        <p class="text-sm text-gray-500">Total Budget</p>
-                        <p class="font-bold text-2xl text-indigo-700"><span id="totalBudgetValue">0.00</span> EGP</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm text-gray-500">Total Spent</p>
-                        <p class="font-bold text-2xl text-red-600"><span id="totalSpentValue">0.00</span> EGP</p>
-                    </div>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                    <div id="overallProgressBar" class="bg-gradient-to-r from-blue-400 to-purple-500 h-4 rounded-full transition-all duration-500" style="width: 0%;"></div>
-                </div>
-                <p class="text-right font-semibold mt-1">Remaining: <span id="overallRemainingValue" class="text-green-600">0.00</span> EGP</p>
+            <!-- Tab Navigation -->
+            <div class="tab-list flex justify-center">
+                <button class="tab-button active" data-tab="dashboard">Dashboard</button>
+                <button class="tab-button" data-tab="transactions">Transactions</button>
+                <button class="tab-button" data-tab="history">History</button>
+                <button class="tab-button" data-tab="chart">Chart</button>
             </div>
 
-            <!-- Inline Notification Area -->
-            <div id="inlineNotification" class="hidden"></div>
+            <!-- Tab Panels -->
+            <div id="tab-dashboard" class="tab-panel active">
+                <!-- Overall Summary -->
+                <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm mb-8">
+                    <div class="flex justify-between items-center text-lg mb-2">
+                        <div>
+                            <p class="text-sm text-gray-500">Total Budget</p>
+                            <p class="font-bold text-2xl text-indigo-700"><span id="totalBudgetValue">0.00</span> EGP</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500">Total Spent</p>
+                            <p class="font-bold text-2xl text-red-600"><span id="totalSpentValue">0.00</span> EGP</p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                        <div id="overallProgressBar" class="bg-gradient-to-r from-blue-400 to-purple-500 h-4 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                    </div>
+                    <p class="text-right font-semibold mt-1">Remaining: <span id="overallRemainingValue" class="text-green-600">0.00</span> EGP</p>
+                </div>
 
-            <!-- Category Management Section -->
-            <div class="mb-8">
-                <h2 class="text-xl font-semibold text-gray-800 mb-3">Manage Categories</h2>
-                <button id="addCategoryModalButton" class="btn btn-purple">Add New Category</button>
+                <!-- Category Management Section -->
+                <div class="mb-8 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-800">Manage Categories</h2>
+                    <button id="addCategoryModalButton" class="btn btn-purple">Add New Category</button>
+                </div>
+
+                <!-- Category Details -->
+                <div id="categoryDetailsContainer" class="space-y-8"></div>
+                 <!-- Archive Button -->
+                <div class="mt-8 text-center">
+                     <button id="archiveMonthButton" class="btn bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">Archive Current Month</button>
+                </div>
             </div>
 
-            <!-- Category Details -->
-            <div id="categoryDetailsContainer" class="space-y-8"></div>
+            <div id="tab-transactions" class="tab-panel">
+                 <h2 class="text-2xl font-bold text-gray-800 mb-4">All Transactions</h2>
+                 <div id="transactionList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+            </div>
 
-            <!-- History & Archiving Section -->
-            <div class="bg-gray-50 p-4 rounded-xl shadow-inner mt-8">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">History & Archiving</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <button id="viewTransactionsButton" class="btn btn-green">View Transactions</button>
-                    <button id="viewMonthlyHistoryButton" class="btn btn-yellow">View History</button>
-                    <button id="viewBudgetChartButton" class="btn btn-teal">View Chart</button>
-                    <button id="archiveMonthButton" class="btn btn-indigo sm:col-span-3">Archive Current Month</button>
-                </div>
+            <div id="tab-history" class="tab-panel">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Archived Budgets</h2>
+                <div id="monthlyHistoryList" class="space-y-3"></div>
+            </div>
+
+            <div id="tab-chart" class="tab-panel">
+                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Budget History Chart</h2>
+                 <div id="chartContainer" class="relative h-96"></div>
             </div>
         </div>
     </div>
@@ -241,28 +240,15 @@
     <button id="voiceFab" class="fab-base" title="Start Voice Input">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
     </button>
+    
+    <!-- Inline Notification Area -->
+    <div id="inlineNotification" class="hidden"></div>
 
-    <!-- Modals -->
+    <!-- Modals (for adding/editing, confirmation, and archived details) -->
     <div id="categoryModalOverlay" class="custom-modal-overlay hidden"></div>
     <div id="transactionModalOverlay" class="custom-modal-overlay hidden"></div>
-    <div id="transactionHistoryModalOverlay" class="custom-modal-overlay hidden"></div>
-    <div id="monthlyHistoryModalOverlay" class="custom-modal-overlay hidden"></div>
     <div id="archivedMonthDetailsModalOverlay" class="custom-modal-overlay hidden"></div>
     <div id="confirmModalOverlay" class="custom-modal-overlay hidden"></div>
-    
-    <!-- Chart Modal -->
-    <div id="chartModalOverlay" class="custom-modal-overlay hidden">
-        <div class="custom-modal-content">
-            <h2 class="custom-modal-title">Budget History Chart</h2>
-            <div id="chartContainer" class="relative h-96">
-                <!-- Chart canvas will be injected here -->
-            </div>
-            <div class="custom-modal-buttons justify-center">
-                <button type="button" id="closeChartModal" class="custom-modal-button custom-modal-cancel">Close</button>
-            </div>
-        </div>
-    </div>
-
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -285,7 +271,7 @@
         let editingCategoryId = null;
         let editingTransactionId = null;
         let recognition = null;
-        let budgetChart = null; // To hold the Chart.js instance
+        let budgetChart = null;
 
         const dom = {
             loadingSpinner: document.getElementById('loadingSpinner'),
@@ -293,6 +279,8 @@
             userIdDisplay: document.getElementById('userIdDisplay'),
             userIdValue: document.getElementById('userIdValue'),
             voiceFab: document.getElementById('voiceFab'),
+            tabs: document.querySelectorAll('.tab-button'),
+            tabPanels: document.querySelectorAll('.tab-panel'),
         };
         
         const defaultCategoryIcon = `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.432 0l6.568-6.568a2.426 2.426 0 0 0 0-3.432L12.586 2.586z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>`;
@@ -348,7 +336,8 @@
         function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
 
         async function showConfirmModal(title, message) {
-            document.getElementById('confirmModalOverlay').innerHTML = `
+            const modal = document.getElementById('confirmModalOverlay');
+            modal.innerHTML = `
                 <div class="custom-modal-content">
                     <h2 class="custom-modal-title">${title}</h2>
                     <p class="text-center text-gray-600 mb-6">${message}</p>
@@ -420,6 +409,9 @@
             if (!currentBudget) return;
             renderSummary();
             renderCategories();
+            renderTransactionList();
+            renderHistoryList();
+            renderBudgetChart();
         }
 
         function renderSummary() {
@@ -528,13 +520,15 @@
 
         function updateTransactionCategoryDropdown() {
              const categorySelect = document.getElementById('modalTransactionCategory');
-            categorySelect.innerHTML = '<option value="">Select Category</option>';
-            currentBudget.categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.id;
-                option.textContent = cat.name;
-                categorySelect.appendChild(option);
-            });
+             if(categorySelect) {
+                categorySelect.innerHTML = '<option value="">Select Category</option>';
+                currentBudget.categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = cat.name;
+                    categorySelect.appendChild(option);
+                });
+             }
         }
         
         async function handleDeleteCategory(categoryId) {
@@ -556,7 +550,7 @@
             const modal = document.getElementById('categoryModalOverlay');
             modal.innerHTML = `
                 <div class="custom-modal-content">
-                    <h2 id="categoryModalTitle" class="custom-modal-title">${category ? 'Edit Category' : 'Add New Category'}</h2>
+                    <h2 class="custom-modal-title">${category ? 'Edit Category' : 'Add New Category'}</h2>
                     <form id="categoryForm">
                         <div class="mb-4">
                             <label for="modalCategoryName" class="block text-gray-700 text-sm font-bold mb-2">Category Name:</label>
@@ -575,15 +569,15 @@
                             </select>
                         </div>
                         <div class="custom-modal-buttons">
-                            <button type="button" id="cancelCategoryModal" class="custom-modal-button custom-modal-cancel">Cancel</button>
-                            <button type="submit" id="submitCategoryButton" class="custom-modal-button custom-modal-primary-button">${category ? 'Save Changes' : 'Add Category'}</button>
+                            <button type="button" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                            <button type="submit" class="custom-modal-button custom-modal-primary-button">${category ? 'Save Changes' : 'Add Category'}</button>
                         </div>
                     </form>
                 </div>
             `;
             showModal('categoryModalOverlay');
-            document.getElementById('categoryForm').onsubmit = handleCategoryFormSubmit;
-            document.getElementById('cancelCategoryModal').onclick = () => hideModal('categoryModalOverlay');
+            modal.querySelector('form').onsubmit = handleCategoryFormSubmit;
+            modal.querySelector('.custom-modal-cancel').onclick = () => hideModal('categoryModalOverlay');
         }
 
         async function handleCategoryFormSubmit(e) {
@@ -637,7 +631,7 @@
                             <input type="date" id="modalTransactionDate" class="form-input" value="${transaction ? transaction.date : new Date().toISOString().split('T')[0]}" required />
                         </div>
                         <div class="custom-modal-buttons">
-                            <button type="button" id="cancelTransactionModal" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                            <button type="button" class="custom-modal-button custom-modal-cancel">Cancel</button>
                             <button type="submit" class="custom-modal-button custom-modal-primary-button">${transaction ? 'Save Changes' : 'Add Expense'}</button>
                         </div>
                     </form>
@@ -646,8 +640,8 @@
             updateTransactionCategoryDropdown();
             if(transaction) document.getElementById('modalTransactionCategory').value = transaction.categoryId;
             showModal('transactionModalOverlay');
-            document.getElementById('transactionForm').onsubmit = handleTransactionFormSubmit;
-            document.getElementById('cancelTransactionModal').onclick = () => hideModal('transactionModalOverlay');
+            modal.querySelector('form').onsubmit = handleTransactionFormSubmit;
+            modal.querySelector('.custom-modal-cancel').onclick = () => hideModal('transactionModalOverlay');
         }
 
         async function handleTransactionFormSubmit(e) {
@@ -682,89 +676,52 @@
             });
         }
 
-        document.getElementById('viewTransactionsButton').addEventListener('click', () => {
-            const modal = document.getElementById('transactionHistoryModalOverlay');
-            modal.innerHTML = `
-                <div class="custom-modal-content" style="max-width: 750px;">
-                    <h2 class="custom-modal-title">Transaction History</h2>
-                    <div id="transactionList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
-                    <div class="custom-modal-buttons justify-center">
-                        <button type="button" id="closeTransactionHistoryModal" class="custom-modal-button custom-modal-cancel">Close</button>
-                    </div>
-                </div>
-            `;
+        function renderTransactionList() {
             const listEl = document.getElementById('transactionList');
-            if (!currentBudget.transactions || currentBudget.transactions.length === 0) {
+            if (!listEl) return;
+            listEl.innerHTML = '';
+            
+            if (!currentBudget || !currentBudget.transactions || currentBudget.transactions.length === 0) {
                 listEl.innerHTML = '<p class="text-gray-500 text-center">No transactions recorded yet.</p>';
-            } else {
-                const grouped = currentBudget.transactions.reduce((acc, t) => {
-                    (acc[t.categoryId] = acc[t.categoryId] || []).push(t);
-                    return acc;
-                }, {});
+                return;
+            } 
+            
+            const grouped = currentBudget.transactions.reduce((acc, t) => {
+                (acc[t.categoryId] = acc[t.categoryId] || []).push(t);
+                return acc;
+            }, {});
 
-                for (const categoryId in grouped) {
-                    const category = currentBudget.categories.find(c => c.id === categoryId);
-                    if (category) {
-                        const section = document.createElement('div');
-                        section.innerHTML = `<h3 class="font-semibold text-lg" style="color: ${category.color};">${category.name}</h3>`;
-                        const ul = document.createElement('ul');
-                        ul.className = 'space-y-2 pl-4';
-                        grouped[categoryId]
-                            .sort((a, b) => new Date(b.date) - new Date(a.date))
-                            .forEach(t => {
-                                const li = document.createElement('li');
-                                li.className = 'flex justify-between items-center bg-white p-2 rounded-md shadow-sm';
-                                li.innerHTML = `
-                                    <div>
-                                        <p class="font-medium">${t.description || 'Expense'}</p>
-                                        <p class="text-sm text-gray-500">${new Date(t.date).toLocaleDateString()}</p>
-                                    </div>
-                                    <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
-                                `;
-                                ul.appendChild(li);
-                            });
-                        section.appendChild(ul);
-                        listEl.appendChild(section);
-                    }
+            for (const categoryId in grouped) {
+                const category = currentBudget.categories.find(c => c.id === categoryId);
+                if (category) {
+                    const section = document.createElement('div');
+                    section.innerHTML = `<h3 class="font-semibold text-lg" style="color: ${category.color};">${category.name}</h3>`;
+                    const ul = document.createElement('ul');
+                    ul.className = 'space-y-2 pl-4';
+                    grouped[categoryId]
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))
+                        .forEach(t => {
+                            const li = document.createElement('li');
+                            li.className = 'flex justify-between items-center bg-white p-2 rounded-md shadow-sm';
+                            li.innerHTML = `
+                                <div>
+                                    <p class="font-medium">${t.description || 'Expense'}</p>
+                                    <p class="text-sm text-gray-500">${new Date(t.date).toLocaleDateString()}</p>
+                                </div>
+                                <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
+                            `;
+                            ul.appendChild(li);
+                        });
+                    section.appendChild(ul);
+                    listEl.appendChild(section);
                 }
             }
-            showModal('transactionHistoryModalOverlay');
-            document.getElementById('closeTransactionHistoryModal').onclick = () => hideModal('transactionHistoryModalOverlay');
-        });
+        }
 
-        document.getElementById('archiveMonthButton').addEventListener('click', async () => {
-            const confirmed = await showConfirmModal('Archive Month?', 'This will save a snapshot of the current budget and reset all spending for the new month. This cannot be undone.');
-            if (confirmed) {
-                const now = new Date();
-                const archiveId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
-                try {
-                    await setDoc(archiveDocRef, currentBudget);
-                    currentBudget.transactions = [];
-                    currentBudget.categories.forEach(c => c.spent = 0);
-                    await saveBudget();
-                    showNotification(`Budget for ${archiveId} has been archived.`, 'success');
-                } catch (error) {
-                    console.error("Error archiving month:", error);
-                    showNotification("Archiving failed. Please try again.", "danger");
-                }
-            }
-        });
-        
-        document.getElementById('viewMonthlyHistoryButton').addEventListener('click', async () => {
-            const modal = document.getElementById('monthlyHistoryModalOverlay');
-            modal.innerHTML = `
-                <div class="custom-modal-content">
-                    <h2 class="custom-modal-title">Monthly Budget History</h2>
-                    <div id="monthlyHistoryList" class="space-y-3"></div>
-                    <div class="custom-modal-buttons justify-center">
-                        <button type="button" id="closeMonthlyHistoryModal" class="custom-modal-button custom-modal-cancel">Close</button>
-                    </div>
-                </div>`;
+        async function renderHistoryList() {
             const historyList = document.getElementById('monthlyHistoryList');
+            if (!historyList) return;
             historyList.innerHTML = '<div class="spinner"></div>';
-            showModal('monthlyHistoryModalOverlay');
-            document.getElementById('closeMonthlyHistoryModal').onclick = () => hideModal('monthlyHistoryModalOverlay');
             
             const archiveColRef = collection(db, `artifacts/${appId}/users/${userId}/archive`);
             try {
@@ -781,38 +738,24 @@
                         monthItem.className = 'bg-gray-100 p-3 rounded-lg flex justify-between items-center';
                         monthItem.innerHTML = `
                             <span class="font-semibold">${doc.id}</span>
-                            <button data-archive-id="${doc.id}" class="view-archive-btn btn btn-indigo btn-sm py-1 px-3">View</button>
+                            <button data-archive-id="${doc.id}" class="view-archive-btn btn bg-indigo-500 hover:bg-indigo-600 btn-sm py-1 px-3">View</button>
                         `;
+                        monthItem.querySelector('.view-archive-btn').onclick = async () => {
+                             const archiveId = doc.id;
+                             const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
+                             const docSnap = await getDoc(archiveDocRef);
+                             if (docSnap.exists()) {
+                                 renderArchivedMonthDetails(archiveId, docSnap.data());
+                                 showModal('archivedMonthDetailsModalOverlay');
+                             }
+                        };
                         historyList.appendChild(monthItem);
                     });
             } catch (error) {
                 console.error("Error fetching archives:", error);
                 historyList.innerHTML = '<p class="text-red-500 text-center">Could not load history.</p>';
             }
-        });
-        
-        document.getElementById('monthlyHistoryModalOverlay').addEventListener('click', async (e) => {
-            const viewBtn = e.target.closest('.view-archive-btn');
-            if (viewBtn) {
-                const archiveId = viewBtn.dataset.archiveId;
-                const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
-                
-                try {
-                    const docSnap = await getDoc(archiveDocRef);
-                    if (docSnap.exists()) {
-                        const archivedData = docSnap.data();
-                        renderArchivedMonthDetails(archiveId, archivedData);
-                        hideModal('monthlyHistoryModalOverlay');
-                        showModal('archivedMonthDetailsModalOverlay');
-                    } else {
-                        showNotification("Could not find the selected archive.", "danger");
-                    }
-                } catch (error) {
-                    console.error("Error fetching archive details:", error);
-                    showNotification("Failed to load archive details.", "danger");
-                }
-            }
-        });
+        }
 
         function renderArchivedMonthDetails(archiveId, data) {
             const modal = document.getElementById('archivedMonthDetailsModalOverlay');
@@ -821,7 +764,7 @@
                     <h2 class="custom-modal-title">Details for ${archiveId}</h2>
                     <div id="archivedMonthContent" class="max-h-[60vh] overflow-y-auto pr-2"></div>
                     <div class="custom-modal-buttons justify-center">
-                        <button type="button" id="closeArchivedMonthDetailsModal" class="custom-modal-button custom-modal-cancel">Close</button>
+                        <button type="button" class="custom-modal-button custom-modal-cancel">Close</button>
                     </div>
                 </div>
             `;
@@ -856,9 +799,8 @@
                     }).join('')}</ul>
                 </div>` : ''}
             `;
-            document.getElementById('closeArchivedMonthDetailsModal').onclick = () => hideModal('archivedMonthDetailsModalOverlay');
+            modal.querySelector('.custom-modal-cancel').onclick = () => hideModal('archivedMonthDetailsModalOverlay');
         }
-
 
         // --- Voice Command Functionality ---
         function setupSpeechRecognition() {
@@ -922,10 +864,9 @@
             showNotification(`Added ${amount.toFixed(2)} EGP to ${categoryName}.`, "success");
         }
         
-        // --- Chart Functionality ---
-        async function showBudgetChart() {
-            showModal('chartModalOverlay');
+        async function renderBudgetChart() {
             const chartContainer = document.getElementById('chartContainer');
+            if (!chartContainer) return;
             chartContainer.innerHTML = '<div class="spinner"></div>';
 
             const archiveColRef = collection(db, `artifacts/${appId}/users/${userId}/archive`);
@@ -982,16 +923,49 @@
             }
         }
 
+        // --- Tab Logic ---
+        dom.tabs.forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.dataset.tab;
+                
+                dom.tabs.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                dom.tabPanels.forEach(panel => {
+                    if (panel.id === `tab-${tab}`) {
+                        panel.classList.add('active');
+                    } else {
+                        panel.classList.remove('active');
+                    }
+                });
+            });
+        });
 
         // --- Initial Setup ---
         document.getElementById('addCategoryModalButton').onclick = () => openCategoryModal();
         document.getElementById('addExpenseFab').onclick = () => openTransactionModal();
-        document.getElementById('voiceFab').onclick = () => {
+        document.getElementById('archiveMonthButton').onclick = async () => {
+             const confirmed = await showConfirmModal('Archive Month?', 'This will save a snapshot of the current budget and reset all spending for the new month. This cannot be undone.');
+            if (confirmed) {
+                const now = new Date();
+                const archiveId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
+                try {
+                    await setDoc(archiveDocRef, currentBudget);
+                    currentBudget.transactions = [];
+                    currentBudget.categories.forEach(c => c.spent = 0);
+                    await saveBudget();
+                    showNotification(`Budget for ${archiveId} has been archived.`, 'success');
+                } catch (error) {
+                    console.error("Error archiving month:", error);
+                    showNotification("Archiving failed. Please try again.", "danger");
+                }
+            }
+        };
+        dom.voiceFab.onclick = () => {
             if (!recognition) return showNotification("Voice recognition is not initialized.", "danger");
             try { recognition.start(); } catch (e) { console.error("Could not start recognition:", e); }
         };
-        document.getElementById('viewBudgetChartButton').onclick = showBudgetChart;
-        document.getElementById('closeChartModal').onclick = () => hideModal('chartModalOverlay');
 
     </script>
 </body>
