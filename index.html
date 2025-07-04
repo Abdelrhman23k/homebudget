@@ -791,43 +791,42 @@
                 const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\d+[.,]\d{1,2})/; // Matches numbers like 1,234.56 or 1234,56 or 123.45
 
                 let foundTotal = false;
+                let potentialTotals = [];
+
+                // First pass: Look for "Total" keywords and extract associated numbers
                 for (const line of lines) {
                     const lowerCaseLine = line.toLowerCase();
                     const totalKeywords = ["total", "total amount", "amount due", "net total", "الإجمالي", "المبلغ الكلي", "مجموع", "sum", "grand total", "payable", "اجمالي", "صافي"];
                     for (const keyword of totalKeywords) {
                         if (lowerCaseLine.includes(keyword)) {
-                            // Try to find amount directly after keyword or on the same line
                             const match = lowerCaseLine.match(new RegExp(`${keyword}\\s*[:]?\\s*([\\d.,]+)`));
                             if (match && match[1]) {
                                 let potentialAmount = parseFloat(match[1].replace(/,/g, '').replace('٫', '.'));
                                 if (!isNaN(potentialAmount) && potentialAmount > 0) {
-                                    extractedAmount = potentialAmount;
-                                    foundTotal = true;
-                                    break;
+                                    potentialTotals.push(potentialAmount);
                                 }
                             }
-                            // If keyword found, but no direct match, look for largest number on the line
+                            // Also try to find a number on the same line if keyword is present
                             const lineAmounts = line.match(new RegExp(amountRegex.source, 'g'));
                             if (lineAmounts && lineAmounts.length > 0) {
-                                let maxLineAmount = 0;
                                 lineAmounts.forEach(amtStr => {
                                     const num = parseFloat(amtStr.replace(/,/g, '').replace('٫', '.'));
-                                    if (!isNaN(num) && num > maxLineAmount) {
-                                        maxLineAmount = num;
+                                    if (!isNaN(num) && num > 0) {
+                                        potentialTotals.push(num);
                                     }
                                 });
-                                if (maxLineAmount > extractedAmount) { // Prefer larger amount if found near total keyword
-                                    extractedAmount = maxLineAmount;
-                                    foundTotal = true;
-                                    break;
-                                }
                             }
                         }
                     }
-                    if (foundTotal) break;
                 }
 
-                // Fallback: if no clear "Total" found, try to find the largest number on the receipt
+                // If multiple potential totals, try to pick the largest one
+                if (potentialTotals.length > 0) {
+                    extractedAmount = Math.max(...potentialTotals);
+                    foundTotal = true;
+                }
+
+                // Fallback: if no clear "Total" found, try to find the largest number on the entire receipt
                 if (!foundTotal) {
                     let maxAmountOverall = 0;
                     const allAmounts = text.match(new RegExp(amountRegex.source, 'g'));
