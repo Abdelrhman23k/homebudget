@@ -18,7 +18,7 @@
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
-            padding: 1rem;
+            padding: 0.5rem; /* Reduced padding for smaller screens */
         }
         .main-card {
             width: 100%;
@@ -26,12 +26,13 @@
             background-color: #ffffff;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             border-radius: 1rem;
-            padding: 1.5rem;
-            margin-top: 2rem;
+            padding: 1rem; /* Adjusted padding */
+            margin-top: 1rem;
             margin-bottom: 8rem; /* Space for FABs */
         }
         @media (min-width: 640px) {
-            .main-card { padding: 2rem; }
+            body { padding: 1rem; }
+            .main-card { padding: 2rem; margin-top: 2rem; }
         }
 
         /* Custom Modal Styles */
@@ -43,7 +44,7 @@
         .custom-modal-content {
             background-color: #ffffff; border-radius: 0.75rem;
             box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1), 0 5px 15px -5px rgba(0, 0, 0, 0.05);
-            padding: 2rem; width: 100%; max-width: 450px;
+            padding: 1.5rem; width: 100%; max-width: 450px;
             max-height: 90vh; overflow-y: auto;
             animation: fadeInScale 0.3s ease-out forwards;
         }
@@ -52,26 +53,17 @@
             to { opacity: 1; transform: scale(1); }
         }
         .custom-modal-title {
-            font-size: 1.5rem; font-weight: 700; color: #4338ca;
+            font-size: 1.25rem; font-weight: 700; color: #4338ca;
             margin-bottom: 1.5rem; text-align: center;
         }
-        .custom-modal-buttons { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
-        .custom-modal-button {
-            padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; color: #ffffff;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: none; cursor: pointer;
+        @media (min-width: 640px) {
+            .custom-modal-title { font-size: 1.5rem; }
+            .custom-modal-content { padding: 2rem; }
         }
-        .custom-modal-button:hover { transform: translateY(-2px); }
-        .custom-modal-confirm { background-color: #dc2626; }
-        .custom-modal-confirm:hover { background-color: #b91c1c; }
-        .custom-modal-cancel { background-color: #6b7280; }
-        .custom-modal-cancel:hover { background-color: #4b5563; }
-        .custom-modal-primary-button { background-color: #4338ca; }
-        .custom-modal-primary-button:hover { background-color: #3730a3; }
 
         /* Floating Action Button (FAB) styles */
         .fab-base {
-            position: fixed; right: 1.5rem; width: 4rem; height: 4rem;
+            position: fixed; right: 1rem; width: 3.5rem; height: 3.5rem;
             border-radius: 9999px; color: #ffffff;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
             display: flex; align-items: center; justify-content: center;
@@ -79,8 +71,13 @@
         }
         .fab-base:disabled { background-color: #9CA3AF; cursor: not-allowed; box-shadow: none; }
         .fab-base:hover:not(:disabled) { transform: scale(1.1); box-shadow: 0 15px 25px rgba(0, 0, 0, 0.3); }
-        #addExpenseFab { bottom: 6.5rem; background-color: #10B981; }
+        #addExpenseFab { bottom: 6rem; background-color: #10B981; }
         #voiceFab { bottom: 1.5rem; background-color: #2563EB; }
+        @media (min-width: 640px) {
+            .fab-base { width: 4rem; height: 4rem; right: 1.5rem; }
+            #addExpenseFab { bottom: 6.5rem; }
+        }
+
 
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
@@ -102,9 +99,13 @@
 
         /* General button styling */
         .btn {
-            padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600;
+            padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 600;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease;
             border: none; cursor: pointer; color: white;
+            font-size: 0.875rem;
+        }
+        @media (min-width: 640px) {
+             .btn { padding: 0.75rem 1.5rem; font-size: 1rem; }
         }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 14px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.08); }
         .btn-purple { background-color: #8B5CF6; }
@@ -127,6 +128,8 @@
             transition: opacity 0.3s ease, transform 0.3s ease;
             text-align: center; font-weight: 500;
             z-index: 1100;
+            width: calc(100% - 2rem);
+            max-width: 500px;
         }
         #inlineNotification.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         #inlineNotification.success { background-color: #d1fae5; color: #065f46; }
@@ -149,11 +152,24 @@
         .progress-bar-fill { height: 100%; border-radius: 9999px; transition: width 0.5s ease-in-out; }
 
         /* Tab Styles */
-        .tab-list { border-bottom: 2px solid #e5e7eb; }
+        .tab-list { 
+            border-bottom: 2px solid #e5e7eb; 
+            display: flex;
+            overflow-x: auto; /* Allow horizontal scrolling for tabs on small screens */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            scrollbar-width: none; /* Hide scrollbar for Firefox */
+        }
+        .tab-list::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome, Safari, and Opera */
         .tab-button {
-            padding: 1rem 1.5rem; font-weight: 600; color: #6b7280;
+            padding: 0.75rem 1rem; font-weight: 600; color: #6b7280;
             border-bottom: 2px solid transparent;
             transition: color 0.3s ease, border-color 0.3s ease;
+            white-space: nowrap; /* Prevent tab text from wrapping */
+            flex-shrink: 0; /* Prevent tabs from shrinking */
+        }
+        @media (min-width: 640px) {
+            .tab-list { justify-content: center; }
+            .tab-button { padding: 1rem 1.5rem; }
         }
         .tab-button.active { color: #4f46e5; border-color: #4f46e5; }
         .tab-panel { display: none; padding-top: 1.5rem; }
@@ -162,7 +178,7 @@
 </head>
 <body class="bg-gray-100">
     <div class="main-card">
-        <h1 class="text-3xl sm:text-4xl font-bold text-center text-indigo-700 mb-2">
+        <h1 class="text-2xl sm:text-3xl font-bold text-center text-indigo-700 mb-2">
             Monthly Budget Tracker
         </h1>
         <div id="userIdDisplay" class="text-center text-xs text-gray-400 mb-6 hidden">
@@ -175,7 +191,7 @@
         <!-- Main Content (hidden until data loads) -->
         <div id="mainContent" class="hidden">
             <!-- Tab Navigation -->
-            <div class="tab-list flex justify-center">
+            <div class="tab-list">
                 <button class="tab-button active" data-tab="dashboard">Dashboard</button>
                 <button class="tab-button" data-tab="transactions">Transactions</button>
                 <button class="tab-button" data-tab="history">History</button>
@@ -189,11 +205,11 @@
                     <div class="flex justify-between items-center text-lg mb-2">
                         <div>
                             <p class="text-sm text-gray-500">Total Budget</p>
-                            <p class="font-bold text-2xl text-indigo-700"><span id="totalBudgetValue">0.00</span> EGP</p>
+                            <p class="font-bold text-xl sm:text-2xl text-indigo-700"><span id="totalBudgetValue">0.00</span> EGP</p>
                         </div>
                         <div class="text-right">
                             <p class="text-sm text-gray-500">Total Spent</p>
-                            <p class="font-bold text-2xl text-red-600"><span id="totalSpentValue">0.00</span> EGP</p>
+                            <p class="font-bold text-xl sm:text-2xl text-red-600"><span id="totalSpentValue">0.00</span> EGP</p>
                         </div>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -204,8 +220,8 @@
 
                 <!-- Category Management Section -->
                 <div class="mb-8 flex justify-between items-center">
-                    <h2 class="text-xl font-semibold text-gray-800">Manage Categories</h2>
-                    <button id="addCategoryModalButton" class="btn btn-purple">Add New Category</button>
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-800">Manage Categories</h2>
+                    <button id="addCategoryModalButton" class="btn btn-purple">Add New</button>
                 </div>
 
                 <!-- Category Details -->
@@ -228,17 +244,17 @@
 
             <div id="tab-chart" class="tab-panel">
                  <h2 class="text-2xl font-bold text-gray-800 mb-4">Budget History Chart</h2>
-                 <div id="chartContainer" class="relative h-96"></div>
+                 <div id="chartContainer" class="relative h-[50vh] sm:h-96"></div>
             </div>
         </div>
     </div>
 
     <!-- Floating Action Buttons -->
     <button id="addExpenseFab" class="fab-base" title="Add New Expense">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
     </button>
     <button id="voiceFab" class="fab-base" title="Start Voice Input">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
     </button>
     
     <!-- Inline Notification Area -->
@@ -442,7 +458,7 @@
                 section.className = 'mb-6';
                 
                 const title = document.createElement('h3');
-                title.className = 'text-2xl font-bold text-gray-800 mb-4 pl-1';
+                title.className = 'text-xl sm:text-2xl font-bold text-gray-800 mb-4 pl-1';
                 title.textContent = type;
                 section.appendChild(title);
 
@@ -473,7 +489,7 @@
                 <div class="flex justify-between items-start w-full">
                     <div class="flex items-center gap-2">
                         ${category.icon || defaultCategoryIcon}
-                        <h4 class="font-bold text-lg text-gray-900">${category.name}</h4>
+                        <h4 class="font-bold text-base sm:text-lg text-gray-900">${category.name}</h4>
                     </div>
                     <div class="flex gap-2">
                         <button data-edit-id="${category.id}" class="edit-category-btn p-1 text-gray-400 hover:text-blue-600 transition-colors">
@@ -491,7 +507,7 @@
                     <div class="progress-bar-container mt-1">
                         <div class="progress-bar-fill" style="width: ${Math.min(100, percentage)}%; background-color: ${category.color || '#cccccc'};"></div>
                     </div>
-                     <p class="text-right text-sm mt-1 font-medium ${remaining < 0 ? 'text-red-500' : 'text-gray-600'}">
+                     <p class="text-right text-xs sm:text-sm mt-1 font-medium ${remaining < 0 ? 'text-red-500' : 'text-gray-600'}">
                         ${remaining.toFixed(2)} EGP remaining
                     </p>
                 </div>
