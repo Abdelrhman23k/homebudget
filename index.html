@@ -201,6 +201,7 @@
                 </button>
                 <p id="listeningMessage" class="mt-2 text-sm text-blue-600 hidden">Listening for your command...</p>
                 <p id="voiceAuthWarning" class="mt-2 text-sm text-red-600 hidden">Please wait for authentication to complete to use voice input.</p>
+                <p id="microphonePermissionMessage" class="mt-2 text-sm text-red-600 hidden">Microphone permission required for voice input.</p>
             </div>
         </div>
 
@@ -411,6 +412,7 @@
         let isAuthReady = false;
         let isProcessingReceipt = false;
         let isListening = false; // New state for voice input
+        let microphonePermissionGranted = false; // New state for microphone permission
         let editingCategory = null; // Stores category object when editing
         let editingTransaction = null; // Stores transaction object when editing
 
@@ -649,6 +651,7 @@
             const startVoiceInputButton = document.getElementById('startVoiceInputButton');
             const listeningMessage = document.getElementById('listeningMessage');
             const voiceAuthWarning = document.getElementById('voiceAuthWarning');
+            const microphonePermissionMessage = document.getElementById('microphonePermissionMessage');
 
 
             if (currentUserId) {
@@ -672,7 +675,8 @@
             receiptAuthWarning.classList.toggle('hidden', currentUserId !== null);
 
             // Voice input button state
-            startVoiceInputButton.disabled = !isAuthReady || isListening || !currentUserId;
+            // Disable if not authenticated, already listening, or microphone permission not granted
+            startVoiceInputButton.disabled = !isAuthReady || isListening || !currentUserId || !microphonePermissionGranted;
             startVoiceInputButton.classList.toggle('bg-gray-400', startVoiceInputButton.disabled);
             startVoiceInputButton.classList.toggle('text-gray-700', startVoiceInputButton.disabled);
             startVoiceInputButton.classList.toggle('cursor-not-allowed', startVoiceInputButton.disabled);
@@ -683,6 +687,7 @@
 
             listeningMessage.classList.toggle('hidden', !isListening);
             voiceAuthWarning.classList.toggle('hidden', currentUserId !== null);
+            microphonePermissionMessage.classList.toggle('hidden', microphonePermissionGranted);
         }
 
 
@@ -725,7 +730,7 @@
                 categoryId: categoryId,
                 amount: parseFloat(amount),
                 description: description || '',
-                date: date || new Date().toISOString().split('T')[0] // ISO format YYYY-MM-DD
+                date: date || new Date().toISOString().split('T')[0] // ISO format (YYYY-MM-DD)
             };
             currentBudget.transactions.push(newTransaction);
             recalculateCategorySpent();
@@ -937,13 +942,27 @@
         let recognition;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        function startVoiceInput() {
+        async function startVoiceInput() {
             if (!SpeechRecognition) {
                 showNotification('Speech Recognition is not supported in this browser.', 'danger');
                 return;
             }
             if (!currentUserId) {
                 showNotification('User not authenticated. Cannot use voice input.', 'warning');
+                return;
+            }
+
+            // Request microphone permission explicitly
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                microphonePermissionGranted = true;
+                // Stop the stream immediately as we only need the permission
+                stream.getTracks().forEach(track => track.stop());
+            } catch (err) {
+                console.error('Microphone access denied:', err);
+                microphonePermissionGranted = false;
+                showNotification('Microphone permission denied. Please enable it in your browser settings to use voice input.', 'danger');
+                updateUI();
                 return;
             }
 
