@@ -189,6 +189,19 @@
                 <p id="processingReceiptMessage" class="mt-2 text-sm text-blue-600 hidden">Processing receipt with Tesseract.js (this may take a moment)...</p>
                 <p id="receiptAuthWarning" class="mt-2 text-sm text-red-600 hidden">Please wait for authentication to complete to use receipt upload.</p>
             </div>
+
+            <!-- Voice Input Section -->
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold text-blue-700 mb-2">Voice Input (On-Device Speech Recognition)</h3>
+                <button
+                    id="startVoiceInputButton"
+                    class="px-6 py-3 font-semibold rounded-lg shadow-md transition duration-300 ease-in-out"
+                >
+                    Start Voice Input
+                </button>
+                <p id="listeningMessage" class="mt-2 text-sm text-blue-600 hidden">Listening for your command...</p>
+                <p id="voiceAuthWarning" class="mt-2 text-sm text-red-600 hidden">Please wait for authentication to complete to use voice input.</p>
+            </div>
         </div>
 
         <!-- Category Management Section -->
@@ -397,6 +410,7 @@
         let currentUserId = null;
         let isAuthReady = false;
         let isProcessingReceipt = false;
+        let isListening = false; // New state for voice input
         let editingCategory = null; // Stores category object when editing
         let editingTransaction = null; // Stores transaction object when editing
 
@@ -632,6 +646,10 @@
             const receiptAuthWarning = document.getElementById('receiptAuthWarning');
             const userIdDisplay = document.getElementById('userIdDisplay');
             const userIdValue = document.getElementById('userIdValue');
+            const startVoiceInputButton = document.getElementById('startVoiceInputButton');
+            const listeningMessage = document.getElementById('listeningMessage');
+            const voiceAuthWarning = document.getElementById('voiceAuthWarning');
+
 
             if (currentUserId) {
                 userIdDisplay.classList.remove('hidden');
@@ -652,6 +670,19 @@
             document.getElementById('processingReceiptMessage').classList.toggle('hidden', !isProcessingReceipt);
 
             receiptAuthWarning.classList.toggle('hidden', currentUserId !== null);
+
+            // Voice input button state
+            startVoiceInputButton.disabled = !isAuthReady || isListening || !currentUserId;
+            startVoiceInputButton.classList.toggle('bg-gray-400', startVoiceInputButton.disabled);
+            startVoiceInputButton.classList.toggle('text-gray-700', startVoiceInputButton.disabled);
+            startVoiceInputButton.classList.toggle('cursor-not-allowed', startVoiceInputButton.disabled);
+            startVoiceInputButton.classList.toggle('bg-blue-600', !startVoiceInputButton.disabled);
+            startVoiceInputButton.classList.toggle('text-white', !startVoiceInputButton.disabled);
+            startVoiceInputButton.classList.toggle('hover:bg-blue-700', !startVoiceInputButton.disabled);
+            startVoiceInputButton.textContent = isListening ? 'Listening...' : 'Start Voice Input';
+
+            listeningMessage.classList.toggle('hidden', !isListening);
+            voiceAuthWarning.classList.toggle('hidden', currentUserId !== null);
         }
 
 
@@ -902,6 +933,138 @@
             }
         }
 
+        // --- Voice Input Functions ---
+        let recognition;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        function startVoiceInput() {
+            if (!SpeechRecognition) {
+                showNotification('Speech Recognition is not supported in this browser.', 'danger');
+                return;
+            }
+            if (!currentUserId) {
+                showNotification('User not authenticated. Cannot use voice input.', 'warning');
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false; // Listen for a single phrase
+            recognition.lang = 'en-US'; // You can set this to 'ar-EG' for Egyptian Arabic, or 'ar' for general Arabic
+            recognition.interimResults = false; // Only return final results
+
+            recognition.onstart = () => {
+                isListening = true;
+                updateUI();
+                showNotification('Listening for your expense...', 'info');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                console.log('Voice transcript:', transcript);
+                processVoiceCommand(transcript);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                showNotification(`Voice input error: ${event.error}. Please try again.`, 'danger');
+                isListening = false;
+                updateUI();
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                updateUI();
+                // Notification already handled by onresult or onerror
+            };
+
+            recognition.start();
+        }
+
+        function processVoiceCommand(commandText) {
+            const lowerCaseCommand = commandText.toLowerCase();
+            let extractedAmount = 0;
+            let extractedCategory = "miscWants"; // Default category
+            let extractedDescription = commandText; // Default description is the full command
+
+            // 1. Extract Amount
+            // Look for numbers, potentially with "dollars", "pounds", "egp", "جنيه"
+            const amountMatch = lowerCaseCommand.match(/(\d+(\.\d{1,2})?)\s*(egp|pounds|جنيه|جنيه مصري)?/);
+            if (amountMatch && amountMatch[1]) {
+                extractedAmount = parseFloat(amountMatch[1]);
+                // Remove the amount and currency from the command text for better category/description parsing
+                commandText = commandText.replace(new RegExp(amountMatch[0], 'i'), '').trim();
+                lowerCaseCommand = commandText.toLowerCase(); // Update lowerCaseCommand
+            } else {
+                // Try to parse numbers written as words (e.g., "ten", "twenty five")
+                const wordToNumberMap = {
+                    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+                    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+                    "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000
+                };
+                let tempAmount = 0;
+                let words = lowerCaseCommand.split(/\s+/);
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i];
+                    if (wordToNumberMap[word] !== undefined) {
+                        if (word === "hundred") {
+                            if (tempAmount === 0) tempAmount = 1; // "hundred" implies 100
+                            tempAmount *= 100;
+                        } else if (word === "thousand") {
+                            if (tempAmount === 0) tempAmount = 1; // "thousand" implies 1000
+                            tempAmount *= 1000;
+                        } else {
+                            tempAmount += wordToNumberMap[word];
+                        }
+                    }
+                }
+                if (tempAmount > 0) {
+                    extractedAmount = tempAmount;
+                    // Remove recognized words from commandText to avoid re-matching for categories
+                    Object.keys(wordToNumberMap).forEach(word => {
+                        commandText = commandText.replace(new RegExp(`\\b${word}\\b`, 'gi'), '').trim();
+                    });
+                    lowerCaseCommand = commandText.toLowerCase();
+                }
+            }
+
+
+            // 2. Extract Category
+            let foundCategory = false;
+            // Iterate through categories to find a match in the remaining command text
+            for (const categoryId in categoryMapping) {
+                const keywords = Array.isArray(categoryMapping[categoryId]) ? categoryMapping[categoryId] : [categoryMapping[categoryId]];
+                for (const keyword of keywords) {
+                    // Check if the command contains the keyword, but avoid partial matches like "car" in "healthcare"
+                    if (lowerCaseCommand.includes(keyword.toLowerCase()) && (lowerCaseCommand.split(/\s+/).includes(keyword.toLowerCase()) || lowerCaseCommand.includes(` ${keyword.toLowerCase()}`))) {
+                        extractedCategory = categoryId;
+                        foundCategory = true;
+                        break;
+                    }
+                }
+                if (foundCategory) break;
+            }
+
+            // 3. Refine Description
+            if (extractedAmount > 0 && foundCategory) {
+                // If amount and category found, use the remaining text as description
+                extractedDescription = commandText.replace(new RegExp(currentBudget.categories.find(c => c.id === extractedCategory)?.name.toLowerCase().split(/\s+/).join('|'), 'g'), '').trim();
+                extractedDescription = extractedDescription || `Voice Entry for ${currentBudget.categories.find(c => c.id === extractedCategory)?.name}`;
+            } else if (extractedAmount > 0) {
+                extractedDescription = `Voice Entry: ${commandText}`;
+            } else {
+                extractedDescription = `Uncategorized Voice Entry: ${commandText}`;
+            }
+
+
+            if (!isNaN(extractedAmount) && extractedAmount > 0) {
+                addTransaction(extractedCategory, extractedAmount, extractedDescription, new Date().toISOString().split('T')[0]);
+                showNotification(`Voice command processed! Added ${extractedAmount.toFixed(2)} EGP to ${currentBudget.categories.find(cat => cat.id === extractedCategory)?.name}.`, 'success');
+            } else {
+                showNotification(`Could not understand voice command: "${commandText}". Please try again or add manually.`, 'warning');
+            }
+        }
+
+
         // --- Category Management Functions ---
 
         function handleSaveCategory(newCategoryData) {
@@ -1125,6 +1288,9 @@
                     showNotification('Please select an image first using the "Choose File" button.', 'warning');
                 }
             });
+
+            // Voice input listener
+            document.getElementById('startVoiceInputButton').addEventListener('click', startVoiceInput);
 
             // Category Management Listeners
             document.getElementById('addCategoryModalButton').addEventListener('click', () => openCategoryModal());
