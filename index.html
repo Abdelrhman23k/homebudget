@@ -402,18 +402,18 @@
 
         // Mapping for AI extracted categories to internal budget IDs (supports English and Arabic)
         const categoryMapping = {
-            "groceries": "groceries", "بقالة": "groceries", "مشتريات": "groceries", "سوبر ماركت": "groceries",
-            "utilities": "utilities", "فواتير": "utilities", "كهرباء": "كهرباء", "مياه": "مياه", "غاز": "غاز", "انترنت": "انترنت", "bills": "utilities",
-            "home ownership costs": "homeOwnership", "صيانة منزل": "homeOwnership", "رسوم مبنى": "homeOwnership", "نظافة شقة": "homeOwnership", "home maintenance": "homeOwnership", "rent": "homeOwnership", "housing": "homeOwnership",
-            "fuel for car": "fuel", "وقود": "fuel", "بنزين": "fuel", "gas": "fuel", "petrol": "fuel", "car": "fuel",
-            "basic healthcare & personal care": "healthcare", "صحة": "healthcare", "عناية شخصية": "healthcare", "صيدلية": "healthcare", "pharmacy": "healthcare", "doctor": "healthcare", "health": "healthcare", "personal care": "healthcare",
-            "dog essentials": "dogEssentials", "مستلزمات كلب": "dogEssentials", "طعام كلاب": "dogEssentials", "بيطري": "dogEssentials", "pet food": "dogEssentials", "vet": "dogEssentials", "dog food": "dogEssentials",
-            "cigarettes": "cigarettes", "سجائر": "cigarettes", "دخان": "دخان", "smoking": "cigarettes",
-            "gifts": "gifts", "هدايا": "gifts", "مناسبات اجتماعية": "gifts", "presents": "gifts", "social": "gifts",
-            "sweet tooth": "sweetTooth", "حلويات": "حلويات", "سكريات": "سكريات", "dessert": "sweetTooth", "sweets": "sweetTooth", "chocolate": "sweetTooth",
-            "subscriptions": "subscriptions", "اشتراكات": "اشتراكات", "نتفليكس": "subscriptions", "جوجل ون": "subscriptions", "سبوتيفاي": "subscriptions", "netflix": "subscriptions", "spotify": "subscriptions", "google one": "subscriptions", "apps": "subscriptions",
-            "take out/dining out": "diningOut", "مطاعم": "مطاعم", "وجبات سريعة": "وجبات سريعة", "خارج المنزل": "خارج المنزل", "restaurant": "diningOut", "food delivery": "diningOut", "eating out": "diningOut",
-            "miscellaneous wants": "miscWants", "متفرقات": "متفرقات", "تسوق": "تسوق", "ترفيه": "ترفيه", "أخرى": "أخرى", "shopping": "miscWants", "entertainment": "miscWants", "other": "miscWants",
+            "groceries": "groceries", "بقالة": "بقالة", "مشتريات": "مشتريات", "سوبر ماركت": "سوبر ماركت", "supermarket": "groceries", "food": "groceries", "اكل": "groceries", "طعام": "groceries", "carrefour": "groceries", "spinneys": "groceries", "metro market": "groceries", "أسواق": "groceries", "خضروات": "groceries", "فواكه": "groceries", "بضائع": "groceries", "لحوم": "groceries", "دواجن": "groceries", "ألبان": "groceries", "خبز": "groceries", "بقالة": "groceries",
+            "utilities": "utilities", "فواتير": "فواتير", "كهرباء": "كهرباء", "مياه": "مياه", "غاز": "غاز", "انترنت": "انترنت", "bills": "utilities", "electricity": "utilities", "water": "utilities", "gas": "utilities", "internet": "utilities", "فاتورة": "utilities", "اتصالات": "utilities",
+            "homeOwnership": "homeOwnership", "صيانة منزل": "صيانة منزل", "رسوم مبنى": "رسوم مبنى", "نظافة شقة": "نظافة شقة", "home maintenance": "homeOwnership", "rent": "homeOwnership", "housing": "homeOwnership", "ايجار": "homeOwnership", "صيانة": "homeOwnership", "منزل": "homeOwnership", "عقارات": "homeOwnership",
+            "fuel": "fuel", "وقود": "وقود", "بنزين": "بنزين", "gas": "fuel", "petrol": "fuel", "car": "fuel", "سيارة": "fuel", "محروقات": "fuel", "بنزينه": "fuel",
+            "healthcare": "healthcare", "صحة": "صحة", "عناية شخصية": "عناية شخصية", "صيدلية": "صيدلية", "pharmacy": "healthcare", "doctor": "healthcare", "health": "healthcare", "personal care": "healthcare", "دكتور": "healthcare", "علاج": "healthcare", "ادوية": "healthcare",
+            "dogEssentials": "dogEssentials", "مستلزمات كلب": "مستلزمات كلب", "طعام كلاب": "طعام كلاب", "بيطري": "بيطري", "pet food": "dogEssentials", "vet": "dogEssentials", "dog food": "dogEssentials", "حيوانات": "dogEssentials", "كلاب": "dogEssentials", "قطط": "dogEssentials",
+            "cigarettes": "cigarettes", "سجائر": "سجائر", "دخان": "دخان", "smoking": "cigarettes",
+            "gifts": "gifts", "هدايا": "هدايا", "مناسبات اجتماعية": "مناسبات اجتماعية", "presents": "gifts", "social": "gifts", "هدية": "gifts",
+            "sweetTooth": "sweetTooth", "حلويات": "حلويات", "سكريات": "سكريات", "dessert": "sweetTooth", "sweets": "sweetTooth", "chocolate": "sweetTooth", "كيك": "sweetTooth", "جاتوه": "sweetTooth",
+            "subscriptions": "subscriptions", "اشتراكات": "اشتراكات", "نتفليكس": "نتفليكس", "جوجل ون": "جوجل ون", "سبوتيفاي": "سبوتيفاي", "netflix": "subscriptions", "spotify": "subscriptions", "google one": "subscriptions", "apps": "subscriptions", "تطبيقات": "subscriptions", "اشتراك": "subscriptions",
+            "diningOut": "diningOut", "take out": "diningOut", "dining out": "diningOut", "مطاعم": "مطاعم", "وجبات سريعة": "وجبات سريعة", "خارج المنزل": "خارج المنزل", "restaurant": "diningOut", "food delivery": "diningOut", "eating out": "diningOut", "مطعم": "diningOut", "وجبات": "diningOut", "كافيه": "diningOut", "قهوة": "diningOut",
+            "miscWants": "miscWants", "متفرقات": "متفرقات", "تسوق": "تسوق", "ترفيه": "ترفيه", "أخرى": "أخرى", "shopping": "miscWants", "entertainment": "miscWants", "other": "miscWants", "شراء": "miscWants", "ترفيه": "miscWants", "ملابس": "miscWants", "احذية": "miscWants", "الكترونيات": "miscWants", "decathlon": "miscWants", "ديكاتلون": "miscWants", "رياضة": "miscWants", "sports": "miscWants", "hyper one": "miscWants", "هايبر وان": "miscWants", "butcher": "miscWants", "جزار": "miscWants", "مخبز": "miscWants", "مكتبة": "miscWants", "ألعاب": "miscWants", "هوايات": "miscWants", "أدوات": "miscWants", "منزلية": "miscWants", "مفروشات": "miscWants", "أجهزة": "miscWants", "كهربائية": "miscWants", "ديكور": "miscWants", "أثاث": "miscWants", "مستحضرات تجميل": "miscWants", "عطور": "miscWants", "إكسسوارات": "miscWants", "مجوهات": "miscWants", "ساعات": "miscWants", "حقائب": "miscWants", "أمتعة": "miscWants", "كتب": "miscWants", "مجلات": "miscWants", "جرائد": "miscWants", "قرطاسية": "miscWants", "لوازم مكتبية": "miscWants", "أدوات مدرسية": "miscWants", "أدوات فنية": "miscWants", "آلات موسيقية": "miscWants", "أدوات رياضية": "miscWants", "معدات رياضية": "miscWants", "أدوات تخييم": "miscWants", "أدوات صيد": "miscWants", "أدوات غطس": "miscWants", "أدوات سباحة": "miscWants", "أدوات لياقة": "miscWants", "أدوات بناء": "miscWants", "أدوات حدائق": "miscWants", "أدوات سيارات": "miscWants", "قطع غيار": "miscWants", "إطارات": "miscWants", "بطاريات": "miscWants", "زيوت": "miscWants", "فلاتر": "miscWants", "إصلاحات": "miscWants", "صيانة": "miscWants", "خدمات": "miscWants", "تأمين": "miscWants", "رسوم": "miscWants", "ضرائب": "miscWants", "غرامات": "miscWants", "تبرعات": "miscWants", "مساعدات": "miscWants", "تعليم": "miscWants", "دورات": "miscWants", "ورش عمل": "miscWants", "كتب دراسية": "miscWants", "لوازم مدرسية": "miscWants", "أقساط": "miscWants", "رسوم دراسية": "miscWants", "مصاريف": "miscWants", "متنوعة": "miscWants", "أخرى": "miscWants", "عامة": "miscWants", "غير مصنفة": "miscWants", "غير محددة": "miscWants", "متفرقات": "miscWants", "أخرى": "miscWants", "عامة": "miscWants", "غير مصنفة": "miscWants", "غير محددة": "miscWants",
             "savings": "savings", "ادخار": "savings", "توفير": "توفير", "save": "savings"
         };
 
@@ -787,19 +787,19 @@
                 const lowerCaseText = text.toLowerCase();
 
                 // Regex to find potential currency amounts (e.g., 123.45, 123)
-                // Looks for numbers, optionally with commas or dots, and up to two decimal places
-                const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\d+[.,]\d{1,2})/; // Matches numbers like 1,234.56 or 1234,56 or 123.45
+                // Handles both dot and Arabic comma (٫) as decimal separators, and optional thousand separators
+                const amountRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,٫]\d{1,2})?|\d+[.,٫]\d{1,2})/; 
 
-                let foundTotal = false;
                 let potentialTotals = [];
 
                 // First pass: Look for "Total" keywords and extract associated numbers
                 for (const line of lines) {
                     const lowerCaseLine = line.toLowerCase();
-                    const totalKeywords = ["total", "total amount", "amount due", "net total", "الإجمالي", "المبلغ الكلي", "مجموع", "sum", "grand total", "payable", "اجمالي", "صافي"];
+                    const totalKeywords = ["total", "total amount", "amount due", "net total", "الإجمالي", "المبلغ الكلي", "مجموع", "sum", "grand total", "payable", "اجمالي", "صافي", "total price", "total cost", "final amount", "final total", "إجمالي الفاتورة", "المبلغ المستحق", "القيمة الإجمالية"];
                     for (const keyword of totalKeywords) {
                         if (lowerCaseLine.includes(keyword)) {
-                            const match = lowerCaseLine.match(new RegExp(`${keyword}\\s*[:]?\\s*([\\d.,]+)`));
+                            // Try to find amount directly after keyword or on the same line
+                            const match = lowerCaseLine.match(new RegExp(`${keyword}\\s*[:]?\\s*([\\d.,٫]+)`));
                             if (match && match[1]) {
                                 let potentialAmount = parseFloat(match[1].replace(/,/g, '').replace('٫', '.'));
                                 if (!isNaN(potentialAmount) && potentialAmount > 0) {
@@ -823,11 +823,8 @@
                 // If multiple potential totals, try to pick the largest one
                 if (potentialTotals.length > 0) {
                     extractedAmount = Math.max(...potentialTotals);
-                    foundTotal = true;
-                }
-
-                // Fallback: if no clear "Total" found, try to find the largest number on the entire receipt
-                if (!foundTotal) {
+                } else {
+                    // Fallback: if no clear "Total" found, try to find the largest number on the entire receipt
                     let maxAmountOverall = 0;
                     const allAmounts = text.match(new RegExp(amountRegex.source, 'g'));
                     if (allAmounts) {
@@ -842,8 +839,9 @@
                 }
 
                 // Simple keyword matching for categories
+                // Expanded keywords for better accuracy
                 const keywords = {
-                    "groceries": ["groceries", "بقالة", "مشتريات", "سوبر ماركت", "supermarket", "food", "اكل", "طعام", "carrefour", "spinneys", "metro market", "أسواق", "خضروات", "فواكه", "بضائع"],
+                    "groceries": ["groceries", "بقالة", "مشتريات", "سوبر ماركت", "supermarket", "food", "اكل", "طعام", "carrefour", "spinneys", "metro market", "أسواق", "خضروات", "فواكه", "بضائع", "لحوم", "دواجن", "ألبان", "خبز", "بقالة", "اولاد الحاج رجب", "أولاد الحاج رجب", "هايب", "hyper one", "هايبر وان"],
                     "utilities": ["utilities", "فواتير", "كهرباء", "مياه", "غاز", "انترنت", "bills", "electricity", "water", "gas", "internet", "فاتورة", "اتصالات"],
                     "homeOwnership": ["home ownership", "صيانة منزل", "رسوم مبنى", "نظافة شقة", "home maintenance", "rent", "housing", "ايجار", "صيانة", "منزل", "عقارات"],
                     "fuel": ["fuel", "وقود", "بنزين", "gas", "petrol", "car", "سيارة", "محروقات", "بنزينه"],
@@ -852,9 +850,10 @@
                     "cigarettes": ["cigarettes", "سجائر", "دخان", "smoking", "دخان"],
                     "gifts": ["gifts", "هدايا", "مناسبات اجتماعية", "presents", "social", "هدية"],
                     "sweetTooth": ["sweet tooth", "حلويات", "سكريات", "dessert", "sweets", "chocolate", "شوكولاتة", "كيك", "جاتوه"],
-                    "subscriptions": ["subscriptions", "اشتراكات", "نتفليكس", "جوجل ون", "سبوتيفاي", "netflix", "spotify", "google one", "apps", "تطبيقات", "اشتراك"],
-                    "diningOut": ["take out", "dining out", "مطاعم", "وجبات سريعة", "خارج المنزل", "restaurant", "food delivery", "eating out", "مطعم", "وجبات", "كافيه", "قهوة"],
-                    "miscWants": ["miscellaneous wants", "متفرقات", "تسوق", "ترفيه", "أخرى", "shopping", "entertainment", "other", "شراء", "ترفيه", "ملابس", "احذية", "الكترونيات", "decathlon", "ديكاتلون", "رياضة", "sports"] // Added "decathlon", "رياضة", "sports"
+                    "subscriptions": ["subscriptions", "اشتراكات", "نتفليكس", "نتفلكس", "جوجل ون", "سبوتيفاي", "netflix", "spotify", "google one", "apps", "تطبيقات", "اشتراك"],
+                    "diningOut": ["take out", "dining out", "مطاعم", "وجبات سريعة", "خارج المنزل", "restaurant", "food delivery", "eating out", "مطعم", "وجبات", "كافيه", "قهوة", "مقهى"],
+                    "miscWants": ["miscellaneous wants", "متفرقات", "تسوق", "ترفيه", "أخرى", "shopping", "entertainment", "other", "شراء", "ترفيه", "ملابس", "احذية", "الكترونيات", "decathlon", "ديكاتلون", "رياضة", "sports", "hyper one", "هايبر وان", "butcher", "جزار", "مخبز", "مكتبة", "ألعاب", "هوايات", "أدوات", "منزلية", "مفروشات", "أجهزة", "كهربائية", "ديكور", "أثاث", "مستحضرات تجميل", "عطور", "إكسسوارات", "مجوهات", "ساعات", "حقائب", "أمتعة", "كتب", "مجلات", "جرائد", "قرطاسية", "لوازم مكتبية", "أدوات مدرسية", "أدوات فنية", "آلات موسيقية", "أدوات رياضية", "معدات رياضية", "أدوات تخييم", "أدوات صيد", "أدوات غطس", "أدوات سباحة", "أدوات لياقة", "أدوات بناء", "أدوات حدائق", "أدوات سيارات", "قطع غيار", "إطارات", "بطاريات", "زيوت", "فلاتر", "إصلاحات", "صيانة", "خدمات", "تأمين", "رسوم", "ضرائب", "غرامات", "تبرعات", "مساعدات", "تعليم", "دورات", "ورش عمل", "كتب دراسية", "لوازم مدرسية", "أقساط", "رسوم دراسية", "مصاريف", "متنوعة", "أخرى", "عامة", "غير مصنفة", "غير محددة", "متفرقات", "أخرى", "عامة", "غير مصنفة", "غير محددة"],
+                    "savings": "savings", "ادخار": "savings", "توفير": "توفير", "save": "savings"
                 };
 
                 let foundCategory = false;
@@ -873,7 +872,7 @@
                 }
 
                 // Try to extract a description from the first few lines or common store names
-                const storeNames = ["decathlon", "ديكاتلون", "carrefour", "spinneys", "metro market", "صيدلية", "pharmacy", "restaurant", "مطعم"];
+                const storeNames = ["decathlon", "ديكاتلون", "carrefour", "spinneys", "metro market", "صيدلية", "pharmacy", "restaurant", "مطعم", "اولاد الحاج رجب", "أولاد الحاج رجب", "hyper one", "هايبر وان", "butcher", "جزار"];
                 for (const storeName of storeNames) {
                     if (lowerCaseText.includes(storeName)) {
                         extractedDescription = `Purchase at ${storeName.charAt(0).toUpperCase() + storeName.slice(1)}`;
