@@ -1469,20 +1469,19 @@
 
         // --- Monthly History Functions (New) ---
         async function archiveCurrentMonth() {
+            console.log("Archive Current Month: Function called.");
             if (!currentUserId) {
                 showNotification('User not authenticated. Cannot archive month.', 'warning');
                 return;
             }
 
-            // Get current date to determine the month being archived (e.g., if today is July 4, 2025, we archive July 2025)
             const now = new Date();
             const year = now.getFullYear();
-            const month = (now.getMonth() + 1).toString().padStart(2, '0'); // getMonth() is 0-indexed
-            const monthYearId = `${year}-${month}`; // e.g., "2025-07"
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const monthYearId = `${year}-${month}`;
 
-            // Create a deep copy of the current budget state to archive
             const budgetToArchive = JSON.parse(JSON.stringify(currentBudget));
-            budgetToArchive.archiveDate = new Date().toISOString(); // Add an archive timestamp
+            budgetToArchive.archiveDate = new Date().toISOString();
 
             const monthlyBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/monthly_budgets/${monthYearId}`);
 
@@ -1490,53 +1489,58 @@
                 await setDoc(monthlyBudgetDocRef, budgetToArchive);
                 showNotification(`Budget for ${monthYearId} archived successfully!`, 'success');
 
-                // Reset current month's spent amounts and transactions for the new month
                 const resetCategories = currentBudget.categories.map(cat => ({
                     ...cat,
-                    spent: 0 // Reset spent for all categories
+                    spent: 0
                 }));
                 const newCurrentBudget = {
                     ...currentBudget,
                     categories: resetCategories,
-                    transactions: [] // Clear transactions for the new month
+                    transactions: []
                 };
 
-                // Update the current budget in Firestore with reset values
                 const currentBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/budget/current`);
                 await setDoc(currentBudgetDocRef, newCurrentBudget);
                 
-                // Update local state immediately to reflect reset
                 currentBudget = newCurrentBudget;
-                updateUI(); // Re-render UI with reset values
+                updateUI();
 
             } catch (error) {
-                console.error("Error archiving month:", error);
+                console.error("Archive Current Month: Error archiving month:", error);
                 showNotification(`Error archiving month: ${error.message}`, 'danger');
             }
         }
 
         async function openMonthlyHistoryModal() {
+            console.log("Monthly History Modal: Function called.");
             if (!currentUserId) {
                 showNotification('User not authenticated. Cannot view monthly history.', 'warning');
+                console.log("Monthly History Modal: User not authenticated. Aborting.");
                 return;
             }
 
             const monthlyHistoryList = document.getElementById('monthlyHistoryList');
             monthlyHistoryList.innerHTML = ''; // Clear previous list
-            document.getElementById('noMonthlyHistoryMessage').classList.add('hidden'); // Hide no history message initially
-
+            const noHistoryMessageElement = document.getElementById('noMonthlyHistoryMessage');
+            
             const monthlyBudgetsCollectionRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/monthly_budgets`);
 
             try {
+                console.log("Monthly History Modal: Attempting to fetch archived months from Firestore.");
                 const querySnapshot = await getDocs(monthlyBudgetsCollectionRef);
                 const archivedMonths = [];
                 querySnapshot.forEach((doc) => {
                     archivedMonths.push({ id: doc.id, data: doc.data() });
                 });
 
+                console.log("Monthly History Modal: Fetched archived months:", archivedMonths);
+
                 if (archivedMonths.length === 0) {
-                    document.getElementById('noMonthlyHistoryMessage').classList.remove('hidden');
+                    noHistoryMessageElement.classList.remove('hidden'); // Ensure message is visible
+                    noHistoryMessageElement.textContent = "No monthly archives found. Archive a month first using the 'Archive Current Month' button!";
+                    console.log("Monthly History Modal: No archived months found. Displaying message.");
                 } else {
+                    noHistoryMessageElement.classList.add('hidden'); // Hide message if archives exist
                     // Sort months in descending order (newest first)
                     archivedMonths.sort((a, b) => b.id.localeCompare(a.id));
 
@@ -1544,7 +1548,7 @@
                         const monthItem = document.createElement('div');
                         monthItem.className = 'bg-gray-100 p-3 rounded-lg shadow-sm flex justify-between items-center';
                         
-                        const dateParts = monthData.id.split('-'); // e.g., "2025-07"
+                        const dateParts = monthData.id.split('-');
                         const monthName = new Date(dateParts[0], dateParts[1] - 1, 1).toLocaleString('en-US', { month: 'long' });
                         const displayDate = `${monthName} ${dateParts[0]}`;
 
@@ -1557,40 +1561,43 @@
                         monthlyHistoryList.appendChild(monthItem);
                     });
 
-                    // Attach event listeners to the new "View Details" buttons
                     document.querySelectorAll('.view-month-details-btn').forEach(button => {
                         button.addEventListener('click', (event) => {
                             const monthId = event.target.dataset.monthId;
                             const selectedMonthData = archivedMonths.find(m => m.id === monthId);
                             if (selectedMonthData) {
-                                openArchivedMonthDetailsModal(selectedMonthData.data, monthId); // Open new modal with details
+                                openArchivedMonthDetailsModal(selectedMonthData.data, monthId);
                             }
                         });
                     });
+                    console.log("Monthly History Modal: Archived months rendered.");
                 }
 
-                document.getElementById('monthlyHistoryModalOverlay').classList.remove('hidden');
+                const modalOverlay = document.getElementById('monthlyHistoryModalOverlay');
+                modalOverlay.classList.remove('hidden');
+                console.log("Monthly History Modal: Modal overlay 'hidden' class removed.");
 
             } catch (error) {
-                console.error("Error fetching monthly history:", error);
+                console.error("Monthly History Modal: Error fetching monthly history:", error);
                 showNotification(`Error fetching monthly history: ${error.message}`, 'danger');
             }
         }
 
         function closeMonthlyHistoryModal() {
+            console.log("Monthly History Modal: Closing modal.");
             document.getElementById('monthlyHistoryModalOverlay').classList.add('hidden');
         }
 
         // --- Archived Month Details Modal Functions (New) ---
         function openArchivedMonthDetailsModal(monthData, monthId) {
+            console.log("Archived Month Details Modal: Opening for month:", monthId);
             const modalOverlay = document.getElementById('archivedMonthDetailsModalOverlay');
-            document.getElementById('archivedMonthName').textContent = monthId; // Display month ID (e.g., "2025-07")
+            document.getElementById('archivedMonthName').textContent = monthId;
             document.getElementById('archivedMonthIncome').textContent = monthData.income.toFixed(2);
 
             const categoriesSummaryContainer = document.getElementById('archivedMonthCategoriesSummary');
-            categoriesSummaryContainer.innerHTML = ''; // Clear previous content
+            categoriesSummaryContainer.innerHTML = '';
 
-            // Render categories summary
             monthData.categories.forEach(category => {
                 const categorySummaryDiv = document.createElement('div');
                 categorySummaryDiv.className = 'bg-gray-100 p-2 rounded-md flex justify-between items-center';
@@ -1616,11 +1623,10 @@
             });
 
             const transactionsListContainer = document.getElementById('archivedMonthTransactionsList');
-            transactionsListContainer.innerHTML = '<h3 class="text-xl font-semibold text-gray-700 mb-3">Transactions:</h3>'; // Clear and add title
+            transactionsListContainer.innerHTML = '<h3 class="text-xl font-semibold text-gray-700 mb-3">Transactions:</h3>';
 
             if (monthData.transactions && monthData.transactions.length > 0) {
                 document.getElementById('noArchivedTransactionsMessage').classList.add('hidden');
-                // Group transactions by category for display
                 const transactionsByCategory = monthData.transactions.reduce((acc, transaction) => {
                     const category = monthData.categories.find(cat => cat.id === transaction.categoryId);
                     const categoryName = category ? category.name : 'Unknown Category';
@@ -1658,9 +1664,11 @@
             }
 
             modalOverlay.classList.remove('hidden');
+            console.log("Archived Month Details Modal: Modal overlay 'hidden' class removed.");
         }
 
         function closeArchivedMonthDetailsModal() {
+            console.log("Archived Month Details Modal: Closing modal.");
             document.getElementById('archivedMonthDetailsModalOverlay').classList.add('hidden');
         }
 
@@ -1759,7 +1767,8 @@
             // Monthly History Listeners (New)
             document.getElementById('viewMonthlyHistoryButton').addEventListener('click', openMonthlyHistoryModal);
             document.getElementById('closeMonthlyHistoryModal').addEventListener('click', closeMonthlyHistoryModal);
-            document.getElementById('archiveMonthButton').addEventListener('click', archiveCurrentMonth);
+            document.getElementById('archiveMonthButton').addEventListener('click', () => archiveCurrentMonth());
+
 
             // Archived Month Details Listeners (New)
             document.getElementById('closeArchivedMonthDetailsModal').addEventListener('click', closeArchivedMonthDetailsModal);
