@@ -827,21 +827,21 @@
             }
             recognition = new SpeechRecognition();
             recognition.continuous = false;
-            recognition.lang = 'ar-EG'; // Changed to Arabic
+            recognition.lang = 'en-US';
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
-            recognition.onstart = () => { dom.voiceFab.classList.add('listening'); showNotification("أستمع الآن...", "info"); };
+            recognition.onstart = () => { dom.voiceFab.classList.add('listening'); showNotification("Listening...", "info"); };
             recognition.onend = () => { dom.voiceFab.classList.remove('listening'); };
             recognition.onerror = (event) => {
                 console.error("Speech recognition error", event.error);
-                let message = `خطأ: ${event.error}`;
+                let message = `Error: ${event.error}`;
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                     message = "تم رفض إذن الميكروفون. يرجى تمكينه في إعدادات المتصفح.";
+                     message = "Microphone permission denied. Please enable it in your browser settings.";
                 }
                 showNotification(message, "danger");
             };
             recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
+                const transcript = event.results[0][0].transcript.toLowerCase();
                 processVoiceCommand(transcript);
             };
         }
@@ -849,7 +849,7 @@
         function processVoiceCommand(transcript) {
             const numbers = transcript.match(/(\d+(\.\d+)?)/);
             if (!numbers) {
-                showNotification("لم أتمكن من تحديد مبلغ في أمرك.", "danger");
+                showNotification("Could not detect an amount in your command.", "danger");
                 return;
             }
             const amount = parseFloat(numbers[0]);
@@ -863,13 +863,13 @@
             }
 
             if (!foundCategoryId) {
-                showNotification("لم أتمكن من تحديد فئة. يرجى المحاولة مرة أخرى.", "danger");
+                showNotification("Could not detect a category. Please try again.", "danger");
                 return;
             }
 
             const newTransaction = {
                 id: `trans-${Date.now()}`, amount, categoryId: foundCategoryId,
-                description: `إدخال صوتي: "${transcript}"`,
+                description: `Voice entry: "${transcript}"`,
                 date: new Date().toISOString().split('T')[0],
             };
 
@@ -877,7 +877,7 @@
             recalculateSpentAmounts();
             saveBudget();
             const categoryName = currentBudget.categories.find(c => c.id === foundCategoryId)?.name || 'category';
-            showNotification(`تمت إضافة ${amount.toFixed(2)} جنيه إلى ${categoryName}.`, "success");
+            showNotification(`Added ${amount.toFixed(2)} EGP to ${categoryName}.`, "success");
         }
         
         async function renderBudgetChart() {
