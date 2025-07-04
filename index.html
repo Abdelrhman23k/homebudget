@@ -6,6 +6,8 @@
     <title>Monthly Budget Tracker</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Custom styles for the app */
         body {
@@ -39,7 +41,7 @@
             padding: 1rem; z-index: 900;
         }
         #transactionModalOverlay { z-index: 950; }
-        #confirmModalOverlay, #monthlyHistoryModalOverlay, #archivedMonthDetailsModalOverlay { z-index: 1000; }
+        #confirmModalOverlay, #monthlyHistoryModalOverlay, #archivedMonthDetailsModalOverlay, #chartModalOverlay { z-index: 1000; }
 
         .custom-modal-content {
             background-color: #ffffff; border-radius: 0.75rem;
@@ -52,7 +54,7 @@
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
         }
-        #archivedMonthDetailsModalOverlay .custom-modal-content { max-width: 750px; }
+        #archivedMonthDetailsModalOverlay .custom-modal-content, #chartModalOverlay .custom-modal-content { max-width: 800px; }
         .custom-modal-title {
             font-size: 1.5rem; font-weight: 700; color: #4338ca;
             margin-bottom: 1.5rem; text-align: center;
@@ -120,6 +122,9 @@
         .btn-yellow:hover { background-color: #D97706; }
         .btn-indigo { background-color: #6366F1; }
         .btn-indigo:hover { background-color: #4F46E5; }
+        .btn-teal { background-color: #14B8A6; }
+        .btn-teal:hover { background-color: #0D9488; }
+
 
         /* Spinner for loading state */
         .spinner {
@@ -186,7 +191,7 @@
 
         <!-- Main Content (hidden until data loads) -->
         <div id="mainContent" class="hidden">
-            <!-- Overall Summary (Tidied Layout) -->
+            <!-- Overall Summary -->
             <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm mb-8">
                 <div class="flex justify-between items-center text-lg mb-2">
                     <div>
@@ -213,18 +218,17 @@
                 <button id="addCategoryModalButton" class="btn btn-purple">Add New Category</button>
             </div>
 
-            <!-- Category Details (Tidied Layout) -->
-            <div id="categoryDetailsContainer" class="space-y-8">
-                <!-- Sections for Needs, Wants, Savings will be generated here -->
-            </div>
+            <!-- Category Details -->
+            <div id="categoryDetailsContainer" class="space-y-8"></div>
 
             <!-- History & Archiving Section -->
             <div class="bg-gray-50 p-4 rounded-xl shadow-inner mt-8">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4">History & Archiving</h2>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button id="viewTransactionsButton" class="btn btn-green flex-1">View All Transactions</button>
-                    <button id="viewMonthlyHistoryButton" class="btn btn-yellow flex-1">View Monthly History</button>
-                    <button id="archiveMonthButton" class="btn btn-indigo flex-1">Archive Current Month</button>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <button id="viewTransactionsButton" class="btn btn-green">View Transactions</button>
+                    <button id="viewMonthlyHistoryButton" class="btn btn-yellow">View History</button>
+                    <button id="viewBudgetChartButton" class="btn btn-teal">View Chart</button>
+                    <button id="archiveMonthButton" class="btn btn-indigo sm:col-span-3">Archive Current Month</button>
                 </div>
             </div>
         </div>
@@ -238,109 +242,27 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
     </button>
 
-    <!-- All Modals remain the same as they are not visible in the new design screenshot -->
-    <!-- Category Add/Edit Modal -->
-    <div id="categoryModalOverlay" class="custom-modal-overlay hidden">
-        <div class="custom-modal-content">
-            <h2 id="categoryModalTitle" class="custom-modal-title">Add New Category</h2>
-            <form id="categoryForm">
-                <div class="mb-4">
-                    <label for="modalCategoryName" class="block text-gray-700 text-sm font-bold mb-2">Category Name:</label>
-                    <input type="text" id="modalCategoryName" class="form-input" required />
-                </div>
-                <div class="mb-4">
-                    <label for="modalAllocatedAmount" class="block text-gray-700 text-sm font-bold mb-2">Allocated Amount (EGP):</label>
-                    <input type="number" id="modalAllocatedAmount" class="form-input" min="0" step="0.01" required />
-                </div>
-                <div class="mb-6">
-                    <label for="modalCategoryType" class="block text-gray-700 text-sm font-bold mb-2">Category Type:</label>
-                    <select id="modalCategoryType" class="form-input">
-                        <option value="Needs">Needs</option>
-                        <option value="Wants">Wants</option>
-                        <option value="Savings">Savings</option>
-                    </select>
-                </div>
-                <div class="custom-modal-buttons">
-                    <button type="button" id="cancelCategoryModal" class="custom-modal-button custom-modal-cancel">Cancel</button>
-                    <button type="submit" id="submitCategoryButton" class="custom-modal-button custom-modal-primary-button">Add Category</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Transaction Add/Edit Modal -->
-    <div id="transactionModalOverlay" class="custom-modal-overlay hidden">
-        <div class="custom-modal-content">
-            <h2 id="transactionModalTitle" class="custom-modal-title">Add New Expense</h2>
-            <form id="transactionForm">
-                <div class="mb-4">
-                    <label for="modalTransactionAmount" class="block text-gray-700 text-sm font-bold mb-2">Amount (EGP):</label>
-                    <input type="number" id="modalTransactionAmount" class="form-input" min="0" step="0.01" required />
-                </div>
-                <div class="mb-4">
-                    <label for="modalTransactionCategory" class="block text-gray-700 text-sm font-bold mb-2">Category:</label>
-                    <select id="modalTransactionCategory" class="form-input" required></select>
-                </div>
-                <div class="mb-4">
-                    <label for="modalTransactionDescription" class="block text-gray-700 text-sm font-bold mb-2">Description (Optional):</label>
-                    <input type="text" id="modalTransactionDescription" class="form-input" />
-                </div>
-                <div class="mb-6">
-                    <label for="modalTransactionDate" class="block text-gray-700 text-sm font-bold mb-2">Date:</label>
-                    <input type="date" id="modalTransactionDate" class="form-input" required />
-                </div>
-                <div class="custom-modal-buttons">
-                    <button type="button" id="cancelTransactionModal" class="custom-modal-button custom-modal-cancel">Cancel</button>
-                    <button type="submit" id="submitTransactionButton" class="custom-modal-button custom-modal-primary-button">Add Expense</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Transaction History Modal -->
-    <div id="transactionHistoryModalOverlay" class="custom-modal-overlay hidden">
-        <div class="custom-modal-content" style="max-width: 750px;">
-            <h2 class="custom-modal-title">Transaction History</h2>
-            <div id="transactionList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
-            <div class="custom-modal-buttons justify-center">
-                <button type="button" id="closeTransactionHistoryModal" class="custom-modal-button custom-modal-cancel">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Monthly History Modal -->
-    <div id="monthlyHistoryModalOverlay" class="custom-modal-overlay hidden">
-        <div class="custom-modal-content">
-            <h2 class="custom-modal-title">Monthly Budget History</h2>
-            <div id="monthlyHistoryList" class="space-y-3"></div>
-            <div class="custom-modal-buttons justify-center">
-                <button type="button" id="closeMonthlyHistoryModal" class="custom-modal-button custom-modal-cancel">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Archived Month Details Modal -->
-    <div id="archivedMonthDetailsModalOverlay" class="custom-modal-overlay hidden">
-        <div class="custom-modal-content">
-            <h2 id="archivedMonthDetailsTitle" class="custom-modal-title">Archived Budget Details</h2>
-            <div id="archivedMonthContent" class="max-h-[60vh] overflow-y-auto pr-2"></div>
-            <div class="custom-modal-buttons justify-center">
-                <button type="button" id="closeArchivedMonthDetailsModal" class="custom-modal-button custom-modal-cancel">Close</button>
-            </div>
-        </div>
-    </div>
+    <!-- Modals -->
+    <div id="categoryModalOverlay" class="custom-modal-overlay hidden"></div>
+    <div id="transactionModalOverlay" class="custom-modal-overlay hidden"></div>
+    <div id="transactionHistoryModalOverlay" class="custom-modal-overlay hidden"></div>
+    <div id="monthlyHistoryModalOverlay" class="custom-modal-overlay hidden"></div>
+    <div id="archivedMonthDetailsModalOverlay" class="custom-modal-overlay hidden"></div>
+    <div id="confirmModalOverlay" class="custom-modal-overlay hidden"></div>
     
-    <!-- Custom Confirmation Modal -->
-    <div id="confirmModalOverlay" class="custom-modal-overlay hidden">
+    <!-- Chart Modal -->
+    <div id="chartModalOverlay" class="custom-modal-overlay hidden">
         <div class="custom-modal-content">
-            <h2 id="confirmModalTitle" class="custom-modal-title">Are you sure?</h2>
-            <p id="confirmModalMessage" class="text-center text-gray-600 mb-6">This action cannot be undone.</p>
+            <h2 class="custom-modal-title">Budget History Chart</h2>
+            <div id="chartContainer" class="relative h-96">
+                <!-- Chart canvas will be injected here -->
+            </div>
             <div class="custom-modal-buttons justify-center">
-                <button id="confirmModalCancel" class="custom-modal-button custom-modal-cancel">Cancel</button>
-                <button id="confirmModalConfirm" class="custom-modal-button custom-modal-confirm">Confirm</button>
+                <button type="button" id="closeChartModal" class="custom-modal-button custom-modal-cancel">Close</button>
             </div>
         </div>
     </div>
+
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -363,6 +285,7 @@
         let editingCategoryId = null;
         let editingTransactionId = null;
         let recognition = null;
+        let budgetChart = null; // To hold the Chart.js instance
 
         const dom = {
             loadingSpinner: document.getElementById('loadingSpinner'),
@@ -425,21 +348,19 @@
         function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
 
         async function showConfirmModal(title, message) {
-            document.getElementById('confirmModalTitle').textContent = title;
-            document.getElementById('confirmModalMessage').textContent = message;
+            document.getElementById('confirmModalOverlay').innerHTML = `
+                <div class="custom-modal-content">
+                    <h2 class="custom-modal-title">${title}</h2>
+                    <p class="text-center text-gray-600 mb-6">${message}</p>
+                    <div class="custom-modal-buttons justify-center">
+                        <button id="confirmModalCancel" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                        <button id="confirmModalConfirm" class="custom-modal-button custom-modal-confirm">Confirm</button>
+                    </div>
+                </div>`;
             showModal('confirmModalOverlay');
             return new Promise(resolve => {
-                const confirmBtn = document.getElementById('confirmModalConfirm');
-                const cancelBtn = document.getElementById('confirmModalCancel');
-                const onConfirm = () => { cleanup(); resolve(true); };
-                const onCancel = () => { cleanup(); resolve(false); };
-                const cleanup = () => {
-                    hideModal('confirmModalOverlay');
-                    confirmBtn.removeEventListener('click', onConfirm);
-                    cancelBtn.removeEventListener('click', onCancel);
-                };
-                confirmBtn.addEventListener('click', onConfirm);
-                cancelBtn.addEventListener('click', onCancel);
+                document.getElementById('confirmModalConfirm').onclick = () => { hideModal('confirmModalOverlay'); resolve(true); };
+                document.getElementById('confirmModalCancel').onclick = () => { hideModal('confirmModalOverlay'); resolve(false); };
             });
         }
 
@@ -502,7 +423,7 @@
         }
 
         function renderSummary() {
-            const totalSpent = currentBudget.categories.reduce((sum, cat) => sum + cat.spent, 0);
+            const totalSpent = currentBudget.categories.reduce((sum, cat) => sum + (cat.spent || 0), 0);
             const overallRemaining = currentBudget.income - totalSpent;
             const spentPercentage = currentBudget.income > 0 ? (totalSpent / currentBudget.income) * 100 : 0;
 
@@ -632,15 +553,40 @@
         
         function openCategoryModal(category = null) {
             editingCategoryId = category ? category.id : null;
-            document.getElementById('categoryModalTitle').textContent = category ? 'Edit Category' : 'Add New Category';
-            document.getElementById('submitCategoryButton').textContent = category ? 'Save Changes' : 'Add Category';
-            document.getElementById('modalCategoryName').value = category ? category.name : '';
-            document.getElementById('modalAllocatedAmount').value = category ? category.allocated : '';
-            document.getElementById('modalCategoryType').value = category ? category.type : 'Needs';
+            const modal = document.getElementById('categoryModalOverlay');
+            modal.innerHTML = `
+                <div class="custom-modal-content">
+                    <h2 id="categoryModalTitle" class="custom-modal-title">${category ? 'Edit Category' : 'Add New Category'}</h2>
+                    <form id="categoryForm">
+                        <div class="mb-4">
+                            <label for="modalCategoryName" class="block text-gray-700 text-sm font-bold mb-2">Category Name:</label>
+                            <input type="text" id="modalCategoryName" class="form-input" value="${category ? category.name : ''}" required />
+                        </div>
+                        <div class="mb-4">
+                            <label for="modalAllocatedAmount" class="block text-gray-700 text-sm font-bold mb-2">Allocated Amount (EGP):</label>
+                            <input type="number" id="modalAllocatedAmount" class="form-input" min="0" step="0.01" value="${category ? category.allocated : ''}" required />
+                        </div>
+                        <div class="mb-6">
+                            <label for="modalCategoryType" class="block text-gray-700 text-sm font-bold mb-2">Category Type:</label>
+                            <select id="modalCategoryType" class="form-input">
+                                <option value="Needs" ${category && category.type === 'Needs' ? 'selected' : ''}>Needs</option>
+                                <option value="Wants" ${category && category.type === 'Wants' ? 'selected' : ''}>Wants</option>
+                                <option value="Savings" ${category && category.type === 'Savings' ? 'selected' : ''}>Savings</option>
+                            </select>
+                        </div>
+                        <div class="custom-modal-buttons">
+                            <button type="button" id="cancelCategoryModal" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                            <button type="submit" id="submitCategoryButton" class="custom-modal-button custom-modal-primary-button">${category ? 'Save Changes' : 'Add Category'}</button>
+                        </div>
+                    </form>
+                </div>
+            `;
             showModal('categoryModalOverlay');
+            document.getElementById('categoryForm').onsubmit = handleCategoryFormSubmit;
+            document.getElementById('cancelCategoryModal').onclick = () => hideModal('categoryModalOverlay');
         }
 
-        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+        async function handleCategoryFormSubmit(e) {
             e.preventDefault();
             const name = document.getElementById('modalCategoryName').value;
             const allocated = parseFloat(document.getElementById('modalAllocatedAmount').value);
@@ -665,29 +611,46 @@
             hideModal('categoryModalOverlay');
             editingCategoryId = null;
             showNotification(`Category ${editingCategoryId ? 'updated' : 'added'} successfully.`, 'success');
-        });
+        }
 
         function openTransactionModal(transaction = null) {
             editingTransactionId = transaction ? transaction.id : null;
-            document.getElementById('transactionForm').reset();
+            const modal = document.getElementById('transactionModalOverlay');
+            modal.innerHTML = `
+                 <div class="custom-modal-content">
+                    <h2 class="custom-modal-title">${transaction ? 'Edit Expense' : 'Add New Expense'}</h2>
+                    <form id="transactionForm">
+                        <div class="mb-4">
+                            <label for="modalTransactionAmount" class="block text-gray-700 text-sm font-bold mb-2">Amount (EGP):</label>
+                            <input type="number" id="modalTransactionAmount" class="form-input" min="0" step="0.01" value="${transaction ? transaction.amount : ''}" required />
+                        </div>
+                        <div class="mb-4">
+                            <label for="modalTransactionCategory" class="block text-gray-700 text-sm font-bold mb-2">Category:</label>
+                            <select id="modalTransactionCategory" class="form-input" required></select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="modalTransactionDescription" class="block text-gray-700 text-sm font-bold mb-2">Description (Optional):</label>
+                            <input type="text" id="modalTransactionDescription" class="form-input" value="${transaction ? transaction.description : ''}" />
+                        </div>
+                        <div class="mb-6">
+                            <label for="modalTransactionDate" class="block text-gray-700 text-sm font-bold mb-2">Date:</label>
+                            <input type="date" id="modalTransactionDate" class="form-input" value="${transaction ? transaction.date : new Date().toISOString().split('T')[0]}" required />
+                        </div>
+                        <div class="custom-modal-buttons">
+                            <button type="button" id="cancelTransactionModal" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                            <button type="submit" class="custom-modal-button custom-modal-primary-button">${transaction ? 'Save Changes' : 'Add Expense'}</button>
+                        </div>
+                    </form>
+                </div>
+            `;
             updateTransactionCategoryDropdown();
-
-            if (transaction) {
-                document.getElementById('transactionModalTitle').textContent = 'Edit Expense';
-                document.getElementById('submitTransactionButton').textContent = 'Save Changes';
-                document.getElementById('modalTransactionAmount').value = transaction.amount;
-                document.getElementById('modalTransactionCategory').value = transaction.categoryId;
-                document.getElementById('modalTransactionDescription').value = transaction.description;
-                document.getElementById('modalTransactionDate').value = transaction.date;
-            } else {
-                document.getElementById('transactionModalTitle').textContent = 'Add New Expense';
-                document.getElementById('submitTransactionButton').textContent = 'Add Expense';
-                document.getElementById('modalTransactionDate').valueAsDate = new Date();
-            }
+            if(transaction) document.getElementById('modalTransactionCategory').value = transaction.categoryId;
             showModal('transactionModalOverlay');
+            document.getElementById('transactionForm').onsubmit = handleTransactionFormSubmit;
+            document.getElementById('cancelTransactionModal').onclick = () => hideModal('transactionModalOverlay');
         }
 
-        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+        async function handleTransactionFormSubmit(e) {
             e.preventDefault();
             const newTransaction = {
                 id: editingTransactionId || `trans-${Date.now()}`,
@@ -709,7 +672,7 @@
             hideModal('transactionModalOverlay');
             editingTransactionId = null;
             showNotification('Transaction saved.', 'success');
-        });
+        }
         
         function recalculateSpentAmounts() {
             currentBudget.categories.forEach(cat => cat.spent = 0);
@@ -720,10 +683,18 @@
         }
 
         document.getElementById('viewTransactionsButton').addEventListener('click', () => {
+            const modal = document.getElementById('transactionHistoryModalOverlay');
+            modal.innerHTML = `
+                <div class="custom-modal-content" style="max-width: 750px;">
+                    <h2 class="custom-modal-title">Transaction History</h2>
+                    <div id="transactionList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+                    <div class="custom-modal-buttons justify-center">
+                        <button type="button" id="closeTransactionHistoryModal" class="custom-modal-button custom-modal-cancel">Close</button>
+                    </div>
+                </div>
+            `;
             const listEl = document.getElementById('transactionList');
-            listEl.innerHTML = '';
-            
-            if (currentBudget.transactions.length === 0) {
+            if (!currentBudget.transactions || currentBudget.transactions.length === 0) {
                 listEl.innerHTML = '<p class="text-gray-500 text-center">No transactions recorded yet.</p>';
             } else {
                 const grouped = currentBudget.transactions.reduce((acc, t) => {
@@ -758,6 +729,7 @@
                 }
             }
             showModal('transactionHistoryModalOverlay');
+            document.getElementById('closeTransactionHistoryModal').onclick = () => hideModal('transactionHistoryModalOverlay');
         });
 
         document.getElementById('archiveMonthButton').addEventListener('click', async () => {
@@ -780,9 +752,19 @@
         });
         
         document.getElementById('viewMonthlyHistoryButton').addEventListener('click', async () => {
+            const modal = document.getElementById('monthlyHistoryModalOverlay');
+            modal.innerHTML = `
+                <div class="custom-modal-content">
+                    <h2 class="custom-modal-title">Monthly Budget History</h2>
+                    <div id="monthlyHistoryList" class="space-y-3"></div>
+                    <div class="custom-modal-buttons justify-center">
+                        <button type="button" id="closeMonthlyHistoryModal" class="custom-modal-button custom-modal-cancel">Close</button>
+                    </div>
+                </div>`;
             const historyList = document.getElementById('monthlyHistoryList');
             historyList.innerHTML = '<div class="spinner"></div>';
             showModal('monthlyHistoryModalOverlay');
+            document.getElementById('closeMonthlyHistoryModal').onclick = () => hideModal('monthlyHistoryModalOverlay');
             
             const archiveColRef = collection(db, `artifacts/${appId}/users/${userId}/archive`);
             try {
@@ -809,8 +791,7 @@
             }
         });
         
-        // --- OPTIMIZED: View Archived Month Details ---
-        document.getElementById('monthlyHistoryList').addEventListener('click', async (e) => {
+        document.getElementById('monthlyHistoryModalOverlay').addEventListener('click', async (e) => {
             const viewBtn = e.target.closest('.view-archive-btn');
             if (viewBtn) {
                 const archiveId = viewBtn.dataset.archiveId;
@@ -834,74 +815,48 @@
         });
 
         function renderArchivedMonthDetails(archiveId, data) {
-            document.getElementById('archivedMonthDetailsTitle').textContent = `Details for ${archiveId}`;
-            const contentEl = document.getElementById('archivedMonthContent');
-            contentEl.innerHTML = '';
-
-            const totalSpent = data.categories.reduce((sum, cat) => sum + cat.spent, 0);
-            const overallRemaining = data.income - totalSpent;
-
-            // Summary
-            const summaryHTML = `
-                <div class="bg-indigo-50 p-4 rounded-lg mb-6">
-                    <h3 class="text-xl font-bold text-indigo-800 mb-2">Summary</h3>
-                    <div class="grid grid-cols-2 gap-4 text-center">
-                        <div>
-                            <p class="text-sm text-gray-600">Income</p>
-                            <p class="font-bold text-lg">${data.income.toFixed(2)} EGP</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Total Spent</p>
-                            <p class="font-bold text-lg text-red-600">${totalSpent.toFixed(2)} EGP</p>
-                        </div>
+            const modal = document.getElementById('archivedMonthDetailsModalOverlay');
+            modal.innerHTML = `
+                 <div class="custom-modal-content">
+                    <h2 class="custom-modal-title">Details for ${archiveId}</h2>
+                    <div id="archivedMonthContent" class="max-h-[60vh] overflow-y-auto pr-2"></div>
+                    <div class="custom-modal-buttons justify-center">
+                        <button type="button" id="closeArchivedMonthDetailsModal" class="custom-modal-button custom-modal-cancel">Close</button>
                     </div>
                 </div>
             `;
-            contentEl.insertAdjacentHTML('beforeend', summaryHTML);
+            const contentEl = document.getElementById('archivedMonthContent');
+            const totalSpent = data.categories.reduce((sum, cat) => sum + cat.spent, 0);
 
-            // Categories
-            const categoriesEl = document.createElement('div');
-            categoriesEl.innerHTML = `<h3 class="text-xl font-bold text-gray-800 mb-4">Categories</h3>`;
-            const categoriesGrid = document.createElement('div');
-            categoriesGrid.className = 'grid grid-cols-1 gap-4';
-            data.categories.forEach(cat => {
-                categoriesGrid.innerHTML += `
+            contentEl.innerHTML = `
+                <div class="bg-indigo-50 p-4 rounded-lg mb-6">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-2">Summary</h3>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div><p class="text-sm text-gray-600">Income</p><p class="font-bold text-lg">${data.income.toFixed(2)} EGP</p></div>
+                        <div><p class="text-sm text-gray-600">Total Spent</p><p class="font-bold text-lg text-red-600">${totalSpent.toFixed(2)} EGP</p></div>
+                    </div>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Categories</h3>
+                <div class="grid grid-cols-1 gap-4">${data.categories.map(cat => `
                     <div class="category-card" style="border-color: ${cat.color || '#ccc'}">
                         <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-2">
-                                ${cat.icon || defaultCategoryIcon}
-                                <span class="font-bold">${cat.name}</span>
-                            </div>
+                            <div class="flex items-center gap-2">${cat.icon || defaultCategoryIcon}<span class="font-bold">${cat.name}</span></div>
                             <span class="text-sm font-semibold">${cat.spent.toFixed(2)} / ${cat.allocated.toFixed(2)}</span>
                         </div>
-                    </div>
-                `;
-            });
-            categoriesEl.appendChild(categoriesGrid);
-            contentEl.appendChild(categoriesEl);
-            
-            // Transactions
-            if (data.transactions && data.transactions.length > 0) {
-                 const transactionsEl = document.createElement('div');
-                 transactionsEl.className = 'mt-6';
-                 transactionsEl.innerHTML = `<h3 class="text-xl font-bold text-gray-800 mb-4">Transactions</h3>`;
-                 const transactionList = document.createElement('ul');
-                 transactionList.className = 'space-y-2';
-                 data.transactions.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(t => {
-                    const categoryName = data.categories.find(c => c.id === t.categoryId)?.name || 'Unknown';
-                    transactionList.innerHTML += `
-                        <li class="flex justify-between items-center bg-gray-50 p-2 rounded-md">
-                            <div>
-                                <p class="font-medium">${t.description || 'Expense'}</p>
-                                <p class="text-sm text-gray-500">${categoryName} - ${new Date(t.date).toLocaleDateString()}</p>
-                            </div>
-                            <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
-                        </li>
-                    `;
-                 });
-                 transactionsEl.appendChild(transactionList);
-                 contentEl.appendChild(transactionsEl);
-            }
+                    </div>`).join('')}
+                </div>
+                ${(data.transactions && data.transactions.length > 0) ? `
+                <div class="mt-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Transactions</h3>
+                    <ul class="space-y-2">${data.transactions.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
+                        const categoryName = data.categories.find(c => c.id === t.categoryId)?.name || 'Unknown';
+                        return `<li class="flex justify-between items-center bg-gray-50 p-2 rounded-md">
+                            <div><p class="font-medium">${t.description || 'Expense'}</p><p class="text-sm text-gray-500">${categoryName} - ${new Date(t.date).toLocaleDateString()}</p></div>
+                            <span class="font-bold">${t.amount.toFixed(2)} EGP</span></li>`;
+                    }).join('')}</ul>
+                </div>` : ''}
+            `;
+            document.getElementById('closeArchivedMonthDetailsModal').onclick = () => hideModal('archivedMonthDetailsModalOverlay');
         }
 
 
@@ -910,44 +865,32 @@
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 dom.voiceFab.disabled = true;
-                // showNotification("Voice recognition not supported in this browser.", "danger");
                 return;
             }
-
             recognition = new SpeechRecognition();
             recognition.continuous = false;
             recognition.lang = 'en-US';
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
-
-            recognition.onstart = () => {
-                dom.voiceFab.classList.add('listening');
-                showNotification("Listening...", "info");
-            };
-
-            recognition.onend = () => {
-                dom.voiceFab.classList.remove('listening');
-            };
-            
+            recognition.onstart = () => { dom.voiceFab.classList.add('listening'); showNotification("Listening...", "info"); };
+            recognition.onend = () => { dom.voiceFab.classList.remove('listening'); };
             recognition.onerror = (event) => {
                 console.error("Speech recognition error", event.error);
+                let message = `Error: ${event.error}`;
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                     showNotification("Microphone permission denied. Please enable it in your browser settings.", "danger");
-                } else {
-                     showNotification(`Error: ${event.error}`, "danger");
+                     message = "Microphone permission denied. Please enable it in your browser settings.";
                 }
+                showNotification(message, "danger");
             };
-
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript.toLowerCase();
-                console.log("Voice transcript:", transcript);
                 processVoiceCommand(transcript);
             };
         }
 
         function processVoiceCommand(transcript) {
-            const numbers = transcript.match(/\d+/g);
-            if (!numbers || numbers.length === 0) {
+            const numbers = transcript.match(/(\d+(\.\d+)?)/);
+            if (!numbers) {
                 showNotification("Could not detect an amount in your command.", "danger");
                 return;
             }
@@ -955,8 +898,7 @@
 
             let foundCategoryId = null;
             for (const categoryId in categoryMapping) {
-                const keywords = categoryMapping[categoryId];
-                if (keywords.some(keyword => transcript.includes(keyword))) {
+                if (categoryMapping[categoryId].some(keyword => transcript.includes(keyword))) {
                     foundCategoryId = categoryId;
                     break;
                 }
@@ -968,41 +910,88 @@
             }
 
             const newTransaction = {
-                id: `trans-${Date.now()}`,
-                amount: amount,
-                categoryId: foundCategoryId,
+                id: `trans-${Date.now()}`, amount, categoryId: foundCategoryId,
                 description: `Voice entry: "${transcript}"`,
-                date: new Date().toISOString().split('T')[0], // Today's date
+                date: new Date().toISOString().split('T')[0],
             };
 
             currentBudget.transactions.push(newTransaction);
             recalculateSpentAmounts();
             saveBudget();
-            
             const categoryName = currentBudget.categories.find(c => c.id === foundCategoryId)?.name || 'category';
             showNotification(`Added ${amount.toFixed(2)} EGP to ${categoryName}.`, "success");
         }
+        
+        // --- Chart Functionality ---
+        async function showBudgetChart() {
+            showModal('chartModalOverlay');
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = '<div class="spinner"></div>';
 
-        dom.voiceFab.addEventListener('click', () => {
-            if (!recognition) {
-                showNotification("Voice recognition is not initialized.", "danger");
-                return;
-            }
+            const archiveColRef = collection(db, `artifacts/${appId}/users/${userId}/archive`);
             try {
-                recognition.start();
-            } catch (e) {
-                console.error("Could not start recognition:", e);
-                dom.voiceFab.classList.remove('listening');
+                const snapshot = await getDocs(archiveColRef);
+                
+                if (snapshot.docs.length < 2) {
+                    chartContainer.innerHTML = '<p class="text-gray-500 text-center">Not enough data to display a chart. Archive at least two months.</p>';
+                    return;
+                }
+
+                const archives = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => a.id.localeCompare(b.id));
+
+                const labels = archives.map(archive => archive.id);
+                const totalSpentData = archives.map(archive => 
+                    (archive.categories || []).reduce((sum, cat) => sum + (cat.spent || 0), 0)
+                );
+                const incomeData = archives.map(archive => archive.income || 0);
+
+                chartContainer.innerHTML = '<canvas id="budgetChartCanvas"></canvas>';
+                const ctx = document.getElementById('budgetChartCanvas').getContext('2d');
+
+                if (budgetChart) budgetChart.destroy();
+
+                budgetChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Total Spent', data: totalSpentData,
+                                borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                fill: true, tension: 0.2
+                            },
+                            {
+                                label: 'Total Budget', data: incomeData,
+                                borderColor: '#22C55E', backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                fill: false, tension: 0.2, borderDash: [5, 5]
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, ticks: { callback: value => `${value} EGP` } } },
+                        plugins: { legend: { position: 'top' }, title: { display: true, text: 'Monthly Spending vs. Budget' } }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error fetching archives for chart:", error);
+                chartContainer.innerHTML = '<p class="text-red-500 text-center">Could not load chart data.</p>';
             }
-        });
+        }
 
 
         // --- Initial Setup ---
-        document.getElementById('addCategoryModalButton').addEventListener('click', () => openCategoryModal());
-        document.getElementById('addExpenseFab').addEventListener('click', () => openTransactionModal());
-        document.querySelectorAll('[id^="cancel"], [id^="close"]').forEach(btn => {
-            btn.addEventListener('click', () => hideModal(btn.closest('.custom-modal-overlay').id));
-        });
+        document.getElementById('addCategoryModalButton').onclick = () => openCategoryModal();
+        document.getElementById('addExpenseFab').onclick = () => openTransactionModal();
+        document.getElementById('voiceFab').onclick = () => {
+            if (!recognition) return showNotification("Voice recognition is not initialized.", "danger");
+            try { recognition.start(); } catch (e) { console.error("Could not start recognition:", e); }
+        };
+        document.getElementById('viewBudgetChartButton').onclick = showBudgetChart;
+        document.getElementById('closeChartModal').onclick = () => hideModal('chartModalOverlay');
 
     </script>
 </body>
