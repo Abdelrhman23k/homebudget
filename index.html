@@ -142,12 +142,16 @@
             z-index: 50;
             opacity: 1; /* Always visible */
             pointer-events: auto; /* Always interactive */
-            transition: background-color 0.3s ease-in-out;
+            transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out; /* Add transform for hover */
         }
 
         .fab-base:disabled {
             background-color: #9CA3AF; /* Tailwind gray-400 */
             cursor: not-allowed;
+        }
+
+        .fab-base:hover:not(:disabled) {
+            transform: scale(1.05); /* Slight scale-up on hover */
         }
 
         /* Specific FAB styles */
@@ -158,6 +162,24 @@
         #voiceFab:hover:not(:disabled) {
             background-color: #1D4ED8; /* Tailwind blue-700 */
         }
+
+        /* Pulsing animation for voiceFab when listening */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); /* blue-600 with opacity */
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(37, 99, 235, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+            }
+        }
+
+        #voiceFab.listening {
+            animation: pulse 1.5s infinite;
+        }
+
 
         #addExpenseFab {
             bottom: 6rem; /* Add Expense FAB above Voice FAB (4rem button + 1rem spacing + 1rem bottom margin) */
@@ -209,6 +231,49 @@
             content: '▼'; /* Custom arrow when open */
             transform: rotate(0deg); /* Reset rotation */
         }
+
+        /* Floating Notification styles */
+        #floatingNotification {
+            position: fixed;
+            right: 5.5rem; /* Adjust based on FAB width + desired spacing */
+            bottom: 2.5rem; /* Adjust to vertically align with FAB */
+            background-color: rgba(0, 0, 0, 0.7); /* Default dark background */
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem; /* Small font size */
+            z-index: 60; /* Higher than FABs */
+            opacity: 0;
+            pointer-events: none; /* Prevents interaction when hidden */
+            transition: opacity 0.3s ease-in-out;
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+
+        #floatingNotification.show {
+            opacity: 1;
+        }
+
+        /* Colors for different notification types */
+        #floatingNotification.success { background-color: #10B981; } /* green-500 */
+        #floatingNotification.warning { background-color: #F59E0B; } /* amber-500 */
+        #floatingNotification.danger { background-color: #EF4444; }   /* red-500 */
+        #floatingNotification.info { background-color: #3B82F6; }     /* blue-500 */
+
+        /* Overall Progress Bar styles */
+        .overall-progress-bar-container {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 1rem;
+            display: flex;
+        }
+
+        .overall-progress-bar-segment {
+            height: 100%;
+            transition: width 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -222,14 +287,6 @@
             User ID: <span id="userIdValue" class="font-mono text-gray-700"></span>
         </div>
 
-        <!-- Notification Area -->
-        <div id="notificationArea" class="hidden p-4 mb-6 rounded-lg shadow-md text-center">
-            <p id="notificationMessage" class="font-medium"></p>
-            <button id="dismissNotification" class="mt-2 text-sm font-semibold underline">
-                Dismiss
-            </button>
-        </div>
-
         <!-- Income & Overall Summary -->
         <div class="bg-indigo-50 p-4 rounded-lg shadow-inner mb-6">
             <h2 class="text-xl sm:text-2xl font-semibold text-indigo-800 mb-3">Overall Summary</h2>
@@ -240,6 +297,10 @@
                 <p id="overallRemainingText" class="sm:col-span-3 text-2xl font-bold">
                     Remaining Budget: <span id="overallRemainingValue">0.00</span> EGP
                 </p>
+            </div>
+            <!-- Overall Progress Bar -->
+            <div class="overall-progress-bar-container">
+                <!-- Segments will be dynamically added here -->
             </div>
         </div>
 
@@ -295,6 +356,9 @@
             <line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
     </button>
+
+    <!-- Floating Notification Area -->
+    <div id="floatingNotification" class="hidden"></div>
 
     <!-- Category Add/Edit Modal (Hidden by default) -->
     <div id="categoryModalOverlay" class="custom-modal-overlay hidden">
@@ -478,19 +542,19 @@
         let currentBudget = {
             income: 27725, // EGP
             categories: [
-                { id: 'groceries', name: 'Groceries (2 people + dog)', allocated: 6000, spent: 0, type: 'Needs' },
-                { id: 'utilities', name: 'Utilities', allocated: 1500, spent: 0, type: 'Needs' },
-                { id: 'homeOwnership', name: 'Home Ownership Costs', allocated: 1675, spent: 0, type: 'Needs' },
-                { id: 'fuel', name: 'Fuel for Car', allocated: 2000, spent: 0, type: 'Needs' },
-                { id: 'healthcare', name: 'Basic Healthcare & Personal Care', allocated: 700, spent: 0, type: 'Needs' },
-                { id: 'dogEssentials', name: 'Dog Essentials', allocated: 1200, spent: 0, type: 'Needs' },
-                { id: 'cigarettes', name: 'Cigarettes', allocated: 4500, spent: 0, type: 'Wants' },
-                { id: 'gifts', name: 'Gifts (Social Obligations)', allocated: 1000, spent: 0, type: 'Wants' },
-                { id: 'sweetTooth', name: 'Sweet Tooth', allocated: 500, spent: 0, type: 'Wants' },
-                { id: 'subscriptions', name: 'Subscriptions', allocated: 390, spent: 0, type: 'Wants' },
-                { id: 'diningOut', name: 'Take Out/Dining Out', allocated: 1500, spent: 0, type: 'Wants' },
-                { id: 'miscWants', name: 'Miscellaneous Wants (incl. Shopping & Entertainment)', allocated: 2260, spent: 0, type: 'Wants' },
-                { id: 'savings', name: 'Savings', allocated: 4000, spent: 0, type: 'Savings' },
+                { id: 'groceries', name: 'Groceries (2 people + dog)', allocated: 6000, spent: 0, type: 'Needs', color: '#EF4444' },    // Red
+                { id: 'utilities', name: 'Utilities', allocated: 1500, spent: 0, type: 'Needs', color: '#F97316' },        // Orange
+                { id: 'homeOwnership', name: 'Home Ownership Costs', allocated: 1675, spent: 0, type: 'Needs', color: '#EAB308' },    // Amber
+                { id: 'fuel', name: 'Fuel for Car', allocated: 2000, spent: 0, type: 'Needs', color: '#22C55E' },         // Green
+                { id: 'healthcare', name: 'Basic Healthcare & Personal Care', allocated: 700, spent: 0, type: 'Needs', color: '#14B8A6' }, // Teal
+                { id: 'dogEssentials', name: 'Dog Essentials', allocated: 1200, spent: 0, type: 'Needs', color: '#06B6D4' },    // Cyan
+                { id: 'cigarettes', name: 'Cigarettes', allocated: 4500, spent: 0, type: 'Wants', color: '#3B82F6' },     // Blue
+                { id: 'gifts', name: 'Gifts (Social Obligations)', allocated: 1000, spent: 0, type: 'Wants', color: '#6366F1' },      // Indigo
+                { id: 'sweetTooth', name: 'Sweet Tooth', allocated: 500, spent: 0, type: 'Wants', color: '#8B5CF6' },      // Violet
+                { id: 'subscriptions', name: 'Subscriptions', allocated: 390, spent: 0, type: 'Wants', color: '#EC4899' }, // Pink
+                { id: 'diningOut', name: 'Take Out/Dining Out', allocated: 1500, spent: 0, type: 'Wants', color: '#F43F5E' },    // Rose
+                { id: 'miscWants', name: 'Miscellaneous Wants (incl. Shopping & Entertainment)', allocated: 2260, spent: 0, type: 'Wants', color: '#64748B' }, // Slate
+                { id: 'savings', name: 'Savings', allocated: 4000, spent: 0, type: 'Savings', color: '#A855F7' },        // Purple
             ],
             transactions: [] // New array to store transaction history
         };
@@ -510,7 +574,7 @@
             "healthcare": ["healthcare", "صحة", "عناية شخصية", "صيدلية", "pharmacy", "doctor", "health", "personal care", "دكتور", "علاج", "ادوية"],
             "dogEssentials": ["dog essentials", "مستلزمات كلب", "طعام كلاب", "بيطري", "pet food", "vet", "dog food", "حيوانات", "كلاب", "قطط"],
             "cigarettes": ["cigarettes", "سجائر", "دخان", "smoking", "دخان"],
-            "gifts": ["gifts", "هدايا", "مناسبات اجتماعية", "presents", "social", "هدية"],
+            "gifts": ["gifts", "هيا", "مناسبات اجتماعية", "presents", "social", "هدية"],
             "sweetTooth": ["sweet tooth", "حلويات", "سكريات", "dessert", "sweets", "chocolate", "شوكولاتة", "كيك", "جاتوه"],
             "subscriptions": ["subscriptions", "اشتراكات", "نتفليكس", "نتفلكس", "جوجل ون", "سبوتيفاي", "netflix", "spotify", "google one", "apps", "تطبيقات", "اشتراك"],
             "diningOut": ["take out", "dining out", "مطاعم", "وجبات سريعة", "خارج المنزل", "restaurant", "food delivery", "eating out", "مطعم", "وجبات", "كافيه", "قهوة", "مقهى"],
@@ -522,33 +586,25 @@
         // --- Utility Functions ---
 
         function showNotification(message, type) {
-            const notificationArea = document.getElementById('notificationArea');
-            const notificationMessage = document.getElementById('notificationMessage');
+            const floatingNotification = document.getElementById('floatingNotification');
+            floatingNotification.textContent = message;
             
-            // Clear previous classes
-            notificationArea.className = 'p-4 mb-6 rounded-lg shadow-md text-center';
+            // Clear previous type classes and hide it initially
+            floatingNotification.classList.remove('success', 'warning', 'danger', 'info', 'show');
 
-            notificationMessage.textContent = message;
-            switch (type) {
-                case 'warning':
-                    notificationArea.classList.add('bg-yellow-100', 'text-yellow-800');
-                    break;
-                case 'danger':
-                    notificationArea.classList.add('bg-red-100', 'text-red-800');
-                    break;
-                case 'info':
-                    notificationArea.classList.add('bg-blue-100', 'text-blue-800');
-                    break;
-                case 'success':
-                    notificationArea.classList.add('bg-green-100', 'text-green-800');
-                    break;
+            // Add new type class
+            if (type) {
+                floatingNotification.classList.add(type);
             }
-            notificationArea.classList.remove('hidden');
+            
+            floatingNotification.classList.add('show'); // Show the notification
+            
+            // Set a timeout to hide the notification
+            setTimeout(clearNotification, 2000); 
         }
 
         function clearNotification() {
-            document.getElementById('notificationArea').classList.add('hidden');
-            document.getElementById('notificationMessage').textContent = '';
+            document.getElementById('floatingNotification').classList.remove('show');
         }
 
         function getOverallRemainingColor(remaining) {
@@ -575,6 +631,35 @@
             const overallRemainingTextElement = document.getElementById('overallRemainingText');
             overallRemainingTextElement.className = `sm:col-span-3 text-2xl font-bold ${getOverallRemainingColor(overallRemaining)}`;
             document.getElementById('overallRemainingValue').textContent = overallRemaining.toFixed(2);
+
+            // Render Overall Progress Bar
+            const progressBarContainer = document.querySelector('.overall-progress-bar-container');
+            progressBarContainer.innerHTML = ''; // Clear existing segments
+
+            let currentSpentPercentage = 0;
+            currentBudget.categories.forEach(category => {
+                const categorySpentPercentage = (category.spent / currentBudget.income) * 100;
+                if (categorySpentPercentage > 0) {
+                    const segment = document.createElement('div');
+                    segment.className = 'overall-progress-bar-segment';
+                    segment.style.width = `${categorySpentPercentage}%`;
+                    segment.style.backgroundColor = category.color;
+                    segment.title = `${category.name}: ${category.spent.toFixed(2)} EGP`; // Tooltip
+                    progressBarContainer.appendChild(segment);
+                    currentSpentPercentage += categorySpentPercentage;
+                }
+            });
+
+            // Add remaining budget segment
+            const remainingPercentage = Math.max(0, 100 - currentSpentPercentage);
+            if (remainingPercentage > 0) {
+                const remainingSegment = document.createElement('div');
+                remainingSegment.className = 'overall-progress-bar-segment';
+                remainingSegment.style.width = `${remainingPercentage}%`;
+                remainingSegment.style.backgroundColor = overallRemaining >= 0 ? '#D1D5DB' : '#EF4444'; // Gray for remaining, Red for overspent
+                remainingSegment.title = `Remaining: ${overallRemaining.toFixed(2)} EGP`;
+                progressBarContainer.appendChild(remainingSegment);
+            }
         }
 
         function renderCategories() {
@@ -602,11 +687,11 @@
                     const radius = (100 - 8) / 2; // size - strokeWidth
                     const circumference = radius * 2 * Math.PI;
                     const offset = circumference - (percentage / 100) * circumference;
-                    let strokeColor = '#22C55E'; // green-500
+                    let strokeColor = category.color || '#22C55E'; // Use category color, fallback to green-500
                     if (percentage >= 100) {
-                        strokeColor = '#EF4444'; // red-500
+                        strokeColor = '#EF4444'; // Always red if 100% or more
                     } else if (percentage >= 80) {
-                        strokeColor = '#EAB308'; // yellow-500
+                        strokeColor = '#EAB308'; // Always yellow if 80% or more
                     }
 
                     categoryCard.innerHTML = `
@@ -643,7 +728,7 @@
                         <div class="mt-3 text-sm w-full">
                             <p class="text-gray-600">Allocated: ${category.allocated.toFixed(2)} EGP</p>
                             <p class="text-gray-600">Spent: ${category.spent.toFixed(2)} EGP</p>
-                            <p class="font-medium mt-1 ${getOverallRemainingColor(category.allocated - category.spent)}">
+                            <p class="font-medium mt-1" style="color: ${category.color || '#374151'};">
                                 Remaining: ${(category.allocated - category.spent).toFixed(2)} EGP
                             </p>
                             <div class="flex justify-center gap-2 mt-3">
@@ -789,6 +874,11 @@
 
             // Voice FAB state
             voiceFab.disabled = !isAuthReady || isListening || !currentUserId;
+            if (isListening) {
+                voiceFab.classList.add('listening');
+            } else {
+                voiceFab.classList.remove('listening');
+            }
             // Add Expense FAB state
             addExpenseFab.disabled = !isAuthReady || !currentUserId;
         }
@@ -1122,10 +1212,8 @@
             document.body.appendChild(confirmModal);
 
             document.getElementById('confirmDeleteCategoryBtn').addEventListener('click', () => {
-                currentBudget.categories = currentBudget.categories.filter(cat => cat.id !== categoryId);
-                // Transactions linked to this category will now point to a non-existent ID,
-                // which will be handled by 'Unknown Category' in renderTransactions.
-                recalculateCategorySpent(); // Recalculate after category deletion
+                currentBudget.categories = currentBudget.categories.filter(t => t.id !== categoryId);
+                recalculateCategorySpent();
                 updateBudgetInFirestore();
                 showNotification('Category deleted successfully!', 'success');
                 confirmModal.remove();
@@ -1269,7 +1357,8 @@
 
 
             // Event Listeners
-            document.getElementById('dismissNotification').addEventListener('click', clearNotification);
+            // The dismissNotification button is no longer needed as notifications auto-dismiss
+            // document.getElementById('dismissNotification').addEventListener('click', clearNotification);
             
             // Open Add Transaction Modal (now via FAB)
             const addExpenseFab = document.getElementById('addExpenseFab');
