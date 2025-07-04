@@ -1475,13 +1475,15 @@
                 return;
             }
 
+            // Get current date to determine the month being archived (e.g., if today is July 4, 2025, we archive July 2025)
             const now = new Date();
             const year = now.getFullYear();
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const monthYearId = `${year}-${month}`;
+            const month = (now.getMonth() + 1).toString().padStart(2, '0'); // getMonth() is 0-indexed
+            const monthYearId = `${year}-${month}`; // e.g., "2025-07"
 
+            // Create a deep copy of the current budget state to archive
             const budgetToArchive = JSON.parse(JSON.stringify(currentBudget));
-            budgetToArchive.archiveDate = new Date().toISOString();
+            budgetToArchive.archiveDate = new Date().toISOString(); // Add an archive timestamp
 
             const monthlyBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/monthly_budgets/${monthYearId}`);
 
@@ -1489,21 +1491,24 @@
                 await setDoc(monthlyBudgetDocRef, budgetToArchive);
                 showNotification(`Budget for ${monthYearId} archived successfully!`, 'success');
 
+                // Reset current month's spent amounts and transactions for the new month
                 const resetCategories = currentBudget.categories.map(cat => ({
                     ...cat,
-                    spent: 0
+                    spent: 0 // Reset spent for all categories
                 }));
                 const newCurrentBudget = {
                     ...currentBudget,
                     categories: resetCategories,
-                    transactions: []
+                    transactions: [] // Clear transactions for the new month
                 };
 
+                // Update the current budget in Firestore with reset values
                 const currentBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/budget/current`);
                 await setDoc(currentBudgetDocRef, newCurrentBudget);
                 
+                // Update local state immediately to reflect reset
                 currentBudget = newCurrentBudget;
-                updateUI();
+                updateUI(); // Re-render UI with reset values
 
             } catch (error) {
                 console.error("Archive Current Month: Error archiving month:", error);
@@ -1520,9 +1525,11 @@
             }
 
             const monthlyHistoryList = document.getElementById('monthlyHistoryList');
-            monthlyHistoryList.innerHTML = ''; // Clear previous list
+            // Get reference to noHistoryMessageElement BEFORE clearing monthlyHistoryList
             const noHistoryMessageElement = document.getElementById('noMonthlyHistoryMessage');
             
+            monthlyHistoryList.innerHTML = ''; // Clear previous list content, including the message element
+
             const monthlyBudgetsCollectionRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/monthly_budgets`);
 
             try {
@@ -1536,11 +1543,18 @@
                 console.log("Monthly History Modal: Fetched archived months:", archivedMonths);
 
                 if (archivedMonths.length === 0) {
-                    noHistoryMessageElement.classList.remove('hidden'); // Ensure message is visible
-                    noHistoryMessageElement.textContent = "No monthly archives found. Archive a month first using the 'Archive Current Month' button!";
+                    // Re-add the message element if no archives are found
+                    const newMessage = document.createElement('p');
+                    newMessage.id = 'noMonthlyHistoryMessage';
+                    newMessage.className = 'text-gray-500';
+                    newMessage.textContent = "No monthly archives found. Archive a month first using the 'Archive Current Month' button!";
+                    monthlyHistoryList.appendChild(newMessage);
                     console.log("Monthly History Modal: No archived months found. Displaying message.");
                 } else {
-                    noHistoryMessageElement.classList.add('hidden'); // Hide message if archives exist
+                    // If archives exist, ensure the message is not there or is hidden
+                    // (It was already cleared by monthlyHistoryList.innerHTML = '';)
+                    // If we didn't clear it, we would do: noHistoryMessageElement.classList.add('hidden');
+                    
                     // Sort months in descending order (newest first)
                     archivedMonths.sort((a, b) => b.id.localeCompare(a.id));
 
