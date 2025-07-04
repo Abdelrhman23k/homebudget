@@ -84,6 +84,16 @@
         #addExpenseFab { bottom: 6.5rem; background-color: #10B981; }
         #voiceFab { bottom: 1.5rem; background-color: #2563EB; }
 
+        /* Pulsing animation for voiceFab when listening */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(37, 99, 235, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+        #voiceFab.listening {
+            animation: pulse 1.5s infinite;
+        }
+
         /* Input field styling */
         .form-input {
             border-radius: 0.5rem; border: 1px solid #d1d5db; padding: 0.75rem 1rem;
@@ -352,12 +362,14 @@
         let unsubscribeBudget = null;
         let editingCategoryId = null;
         let editingTransactionId = null;
+        let recognition = null;
 
         const dom = {
             loadingSpinner: document.getElementById('loadingSpinner'),
             mainContent: document.getElementById('mainContent'),
             userIdDisplay: document.getElementById('userIdDisplay'),
             userIdValue: document.getElementById('userIdValue'),
+            voiceFab: document.getElementById('voiceFab'),
         };
         
         const defaultCategoryIcon = `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.432 0l6.568-6.568a2.426 2.426 0 0 0 0-3.432L12.586 2.586z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>`;
@@ -380,6 +392,22 @@
                 { id: 'savings', name: 'Savings', allocated: 4000, spent: 0, type: 'Savings', color: '#A855F7', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M8 12h7"/><path d="M12 7v10"/></svg>` },
             ],
             transactions: []
+        };
+        
+        const categoryMapping = {
+             "groceries": ["groceries", "grocery", "بقالة", "سوبر ماركت"],
+             "utilities": ["utilities", "bills", "فواتير", "كهرباء", "غاز"],
+             "homeOwnership": ["home", "rent", "ايجار", "صيانة"],
+             "fuel": ["fuel", "gas", "بنزين"],
+             "healthcare": ["health", "pharmacy", "doctor", "صيدلية", "دكتور"],
+             "dogEssentials": ["dog", "pet", "كلب"],
+             "cigarettes": ["cigarettes", "smoke", "سجائر"],
+             "gifts": ["gifts", "presents", "هدايا"],
+             "sweetTooth": ["sweets", "dessert", "حلويات"],
+             "subscriptions": ["subscriptions", "netflix", "spotify", "اشتراك"],
+             "diningOut": ["dining", "restaurant", "مطعم", "اكل بره"],
+             "miscWants": ["misc", "miscellaneous", "shopping", "entertainment", "متفرقات", "شوبينج"],
+             "savings": ["savings", "توفير", "ادخار"]
         };
 
         function showNotification(message, type = 'info', duration = 3000) {
@@ -422,6 +450,7 @@
                 dom.userIdValue.textContent = userId;
                 dom.userIdDisplay.classList.remove('hidden');
                 await setupBudgetListener();
+                setupSpeechRecognition();
             } else {
                 try {
                     if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
@@ -780,6 +809,100 @@
             }
         });
 
+        // --- Voice Command Functionality ---
+        function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                dom.voiceFab.disabled = true;
+                showNotification("Voice recognition not supported in this browser.", "danger");
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                dom.voiceFab.classList.add('listening');
+                showNotification("Listening...", "info");
+            };
+
+            recognition.onend = () => {
+                dom.voiceFab.classList.remove('listening');
+                clearNotification();
+            };
+            
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                     showNotification("Microphone permission denied. Please enable it in your browser settings.", "danger");
+                } else {
+                     showNotification(`Error: ${event.error}`, "danger");
+                }
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                console.log("Voice transcript:", transcript);
+                processVoiceCommand(transcript);
+            };
+        }
+
+        function processVoiceCommand(transcript) {
+            const numbers = transcript.match(/\d+/g);
+            if (!numbers || numbers.length === 0) {
+                showNotification("Could not detect an amount in your command.", "danger");
+                return;
+            }
+            const amount = parseFloat(numbers[0]);
+
+            let foundCategoryId = null;
+            for (const categoryId in categoryMapping) {
+                const keywords = categoryMapping[categoryId];
+                if (keywords.some(keyword => transcript.includes(keyword))) {
+                    foundCategoryId = categoryId;
+                    break;
+                }
+            }
+
+            if (!foundCategoryId) {
+                showNotification("Could not detect a category. Please try again.", "danger");
+                return;
+            }
+
+            const newTransaction = {
+                id: `trans-${Date.now()}`,
+                amount: amount,
+                categoryId: foundCategoryId,
+                description: `Voice entry: "${transcript}"`,
+                date: new Date().toISOString().split('T')[0], // Today's date
+            };
+
+            currentBudget.transactions.push(newTransaction);
+            recalculateSpentAmounts();
+            saveBudget();
+            
+            const categoryName = currentBudget.categories.find(c => c.id === foundCategoryId)?.name || 'category';
+            showNotification(`Added ${amount.toFixed(2)} EGP to ${categoryName}.`, "success");
+        }
+
+        dom.voiceFab.addEventListener('click', () => {
+            if (!recognition) {
+                showNotification("Voice recognition is not initialized.", "danger");
+                return;
+            }
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error("Could not start recognition:", e);
+                dom.voiceFab.classList.remove('listening');
+            }
+        });
+
+
+        // --- Initial Setup ---
         document.getElementById('addCategoryModalButton').addEventListener('click', () => openCategoryModal());
         document.getElementById('addExpenseFab').addEventListener('click', () => openTransactionModal());
         document.querySelectorAll('[id^="cancel"], [id^="close"]').forEach(btn => {
