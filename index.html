@@ -14,1803 +14,784 @@
             margin: 0;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Align to top */
+            align-items: flex-start;
             min-height: 100vh;
-            padding: 1rem; /* p-4 */
+            padding: 1rem;
         }
-        /* Ensure the main card is centered and responsive */
         .main-card {
             width: 100%;
-            max-width: 768px; /* max-w-4xl */
+            max-width: 800px;
             background-color: #ffffff;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
-            border-radius: 0.75rem; /* rounded-xl */
-            padding: 1.5rem; /* p-6 */
-            margin-top: 2rem; /* Add some top margin */
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 8rem; /* Space for FABs */
         }
-        @media (min-width: 640px) { /* sm:breakpoint */
-            .main-card {
-                padding: 2rem; /* sm:p-8 */
-            }
-        }
-        @media (min-width: 1024px) { /* lg:breakpoint */
-            .main-card {
-                padding: 2rem; /* lg:p-8 */
-            }
-        }
-
-        /* Styles for Circular Progress SVG */
-        .circular-progress-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .circular-progress-text-container {
-            position: absolute;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            width: 100%;
-        }
-        .circular-progress-percentage {
-            font-size: 1.125rem; /* text-lg */
-            font-weight: bold;
-            color: #374151; /* gray-800 */
-        }
-        .circular-progress-spent-text {
-            font-size: 0.75rem; /* text-xs */
-            color: #6B7280; /* gray-500 */
+        @media (min-width: 640px) {
+            .main-card { padding: 2rem; }
         }
 
         /* Custom Modal Styles */
         .custom-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            z-index: 900; /* Base z-index for modals */
+            position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6);
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem; z-index: 900;
         }
-        /* Ensure transaction modal is always on top */
-        #transactionModalOverlay {
-            z-index: 950; /* Higher than history modal */
-        }
-        #confirmModalOverlay, #monthlyHistoryModalOverlay, #archivedMonthDetailsModalOverlay { /* For confirm/delete modals and history modal */
-            z-index: 1000;
-        }
+        #transactionModalOverlay { z-index: 950; }
+        #confirmModalOverlay, #monthlyHistoryModalOverlay, #archivedMonthDetailsModalOverlay { z-index: 1000; }
 
         .custom-modal-content {
-            background-color: #ffffff;
-            border-radius: 0.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            padding: 1.5rem;
-            width: 100%;
-            max-width: 400px;
-            max-height: 90vh; /* Limit height for scrollable content */
-            overflow-y: auto; /* Enable scrolling for modal content */
+            background-color: #ffffff; border-radius: 0.75rem;
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1), 0 5px 15px -5px rgba(0, 0, 0, 0.05);
+            padding: 2rem; width: 100%; max-width: 450px;
+            max-height: 90vh; overflow-y: auto;
+            animation: fadeInScale 0.3s ease-out forwards;
         }
-        /* For the archived month details modal, allow wider content */
-        #archivedMonthDetailsModalOverlay .custom-modal-content {
-            max-width: 700px; /* Wider for better display of details */
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
-
+        #archivedMonthDetailsModalOverlay .custom-modal-content { max-width: 750px; }
         .custom-modal-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4F46E5;
-            margin-bottom: 1rem;
+            font-size: 1.5rem; font-weight: 700; color: #4338ca;
+            margin-bottom: 1.5rem; text-align: center;
         }
-        .custom-modal-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 1.5rem;
-        }
+        .custom-modal-buttons { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
         .custom-modal-button {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: bold;
-            color: #ffffff;
-            transition: background-color 0.3s;
+            padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; color: #ffffff;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: none; cursor: pointer;
         }
-        .custom-modal-confirm {
-            background-color: #DC2626; /* red-600 */
-        }
-        .custom-modal-confirm:hover {
-            background-color: #B91C1C; /* red-700 */
-        }
-        .custom-modal-cancel {
-            background-color: #6B7280; /* gray-500 */
-        }
-        .custom-modal-cancel:hover {
-            background-color: #4B5563; /* gray-600 */
-        }
+        .custom-modal-button:hover { transform: translateY(-2px); }
+        .custom-modal-confirm { background-color: #dc2626; }
+        .custom-modal-confirm:hover { background-color: #b91c1c; }
+        .custom-modal-cancel { background-color: #6b7280; }
+        .custom-modal-cancel:hover { background-color: #4b5563; }
+        .custom-modal-primary-button { background-color: #4338ca; }
+        .custom-modal-primary-button:hover { background-color: #3730a3; }
 
         /* Floating Action Button (FAB) styles */
         .fab-base {
-            position: fixed;
-            right: 1rem; /* Both FABs on the right */
-            width: 4rem; /* Equivalent to Tailwind w-16 */
-            height: 4rem; /* Equivalent to Tailwind h-16 */
-            border-radius: 9999px; /* Equivalent to Tailwind rounded-full */
-            color: #ffffff; /* Tailwind text-white */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Tailwind shadow-lg */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 50;
-            opacity: 1; /* Always visible */
-            pointer-events: auto; /* Always interactive */
-            transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out; /* Add transform for hover */
+            position: fixed; right: 1.5rem; width: 4rem; height: 4rem;
+            border-radius: 9999px; color: #ffffff;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 800; transition: all 0.3s ease;
+        }
+        .fab-base:disabled { background-color: #9CA3AF; cursor: not-allowed; box-shadow: none; }
+        .fab-base:hover:not(:disabled) { transform: scale(1.1); box-shadow: 0 15px 25px rgba(0, 0, 0, 0.3); }
+        #addExpenseFab { bottom: 6.5rem; background-color: #10B981; }
+        #voiceFab { bottom: 1.5rem; background-color: #2563EB; }
+
+        /* Input field styling */
+        .form-input {
+            border-radius: 0.5rem; border: 1px solid #d1d5db; padding: 0.75rem 1rem;
+            font-size: 1rem; width: 100%;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-input:focus {
+            outline: none; border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
         }
 
-        .fab-base:disabled {
-            background-color: #9CA3AF; /* Tailwind gray-400 */
-            cursor: not-allowed;
+        /* General button styling */
+        .btn {
+            padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: all 0.3s ease;
+            border: none; cursor: pointer; color: white;
         }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 14px rgba(0,0,0,0.1), 0 3px 6px rgba(0,0,0,0.08); }
+        .btn-purple { background-color: #8B5CF6; }
+        .btn-purple:hover { background-color: #7C3AED; }
+        .btn-green { background-color: #10B981; }
+        .btn-green:hover { background-color: #059669; }
+        .btn-yellow { background-color: #F59E0B; }
+        .btn-yellow:hover { background-color: #D97706; }
+        .btn-indigo { background-color: #6366F1; }
+        .btn-indigo:hover { background-color: #4F46E5; }
 
-        .fab-base:hover:not(:disabled) {
-            transform: scale(1.05); /* Slight scale-up on hover */
+        /* Spinner for loading state */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px;
+            border-radius: 50%; border-left-color: #4f46e5;
+            animation: spin 1s ease infinite; margin: 2rem auto;
         }
-
-        /* Specific FAB styles */
-        #voiceFab {
-            bottom: 1rem; /* Voice FAB at the very bottom */
-            background-color: #2563EB; /* Tailwind blue-600 */
-            position: fixed; /* Ensure it stays fixed */
-        }
-        #voiceFab:hover:not(:disabled) {
-            background-color: #1D4ED8; /* Tailwind blue-700 */
-        }
-
-        /* Pulsing animation for voiceFab when listening */
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); /* blue-600 with opacity */
-            }
-            70% {
-                box-shadow: 0 0 0 15px rgba(37, 99, 235, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
-            }
-        }
-
-        #voiceFab.listening {
-            animation: pulse 1.5s infinite;
-        }
-
-        /* Icon animation within FAB */
-        #voiceFab svg {
-            position: absolute; /* Position icons on top of each other */
-            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-        }
-
-        #voiceFab svg.icon-show {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        #voiceFab svg.icon-hide {
-            opacity: 0;
-            transform: scale(0.5); /* Scale down when hidden */
-        }
-
-        #addExpenseFab {
-            bottom: 6rem; /* Add Expense FAB above Voice FAB (4rem button + 1rem spacing + 1rem bottom margin) */
-            background-color: #10B981; /* Tailwind green-500 */
-        }
-        #addExpenseFab:hover:not(:disabled) {
-            background-color: #059669; /* Tailwind green-600 */
-        }
-
-        /* Styles for Collapsible Transaction Sections */
-        .category-section-details {
-            background-color: #f9fafb; /* Tailwind gray-50 */
-            border: 1px solid #e5e7eb; /* Tailwind gray-200 */
-            border-radius: 0.5rem;
-            margin-bottom: 0.75rem;
-            overflow: hidden; /* Ensures rounded corners apply to content */
-        }
-
-        .category-section-summary {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            cursor: pointer;
-            background-color: #eff6ff; /* Tailwind blue-50 */
-            font-weight: 600;
-            color: #1f2937; /* Tailwind gray-900 */
-            border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
-        }
-
-        .category-section-summary:hover {
-            background-color: #e0e7ff; /* Tailwind indigo-100 */
-        }
-
-        .category-section-content {
-            padding: 0.75rem 1rem;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .category-section-summary::-webkit-details-marker {
-            display: none; /* Hide default arrow */
-        }
-        .category-section-summary::before {
-            content: '►'; /* Custom arrow */
-            margin-right: 0.5rem;
-            transition: transform 0.2s;
-        }
-        .category-section-details[open] > .category-section-summary::before {
-            content: '▼'; /* Custom arrow when open */
-            transform: rotate(0deg); /* Reset rotation */
-        }
-
-        /* Overall Progress Bar styles */
-        .overall-progress-bar-container {
-            width: 100%;
-            height: 20px;
-            background-color: #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 1rem;
-            display: flex;
-        }
-
-        .overall-progress-bar-segment {
-            height: 100%;
-            transition: width 0.5s ease-in-out;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Inline Notification styles */
         #inlineNotification {
-            margin-bottom: 1rem; /* Spacing below the notification */
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            opacity: 0; /* Start hidden */
-            transition: opacity 0.3s ease-in-out;
-            text-align: center;
+            margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.75rem;
+            font-size: 1rem; opacity: 0; transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            text-align: center; font-weight: 500;
         }
+        #inlineNotification.show { opacity: 1; transform: translateY(0); }
+        #inlineNotification.success { background-color: #d1fae5; color: #065f46; }
+        #inlineNotification.danger { background-color: #fee2e2; color: #991b1b; }
+        #inlineNotification.info { background-color: #dbeafe; color: #1e40af; }
 
-        #inlineNotification.show {
-            opacity: 1;
-        }
-
-        /* Colors for different notification types */
-        #inlineNotification.success { background-color: #D1FAE5; color: #065F46; } /* green-100, green-900 */
-        #inlineNotification.warning { background-color: #FEF3C7; color: #92400E; } /* amber-100, amber-900 */
-        #inlineNotification.danger { background-color: #FEE2E2; color: #991B1B; }   /* red-100, red-900 */
-        #inlineNotification.info { background-color: #DBEAFE; color: #1E40AF; }     /* blue-100, blue-900 */
-
-        /* Category Progress Bar in Transaction History */
-        .category-history-progress-bar {
-            width: 80px; /* Smaller width for summary bar */
-            height: 10px;
-            background-color: #e0e0e0;
-            border-radius: 5px;
-            overflow: hidden;
+        /* New Category Card Styles */
+        .category-card {
+            background-color: white;
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 0.75rem;
+            padding: 1rem;
             display: flex;
-            margin-left: 0.5rem; /* Space between text and bar */
+            flex-direction: column;
+            gap: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+            border-left-width: 5px;
         }
-
-        .category-history-progress-segment {
+        /* Icon style in category card */
+        .category-icon {
+            width: 20px;
+            height: 20px;
+            color: #4b5563; /* gray-600 */
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: #e5e7eb; /* gray-200 */
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
             height: 100%;
+            border-radius: 9999px;
             transition: width 0.5s ease-in-out;
-            border-radius: 5px; /* Apply rounded corners to the segment */
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-100">
     <div class="main-card">
-        <h1 class="text-3xl sm:text-4xl font-bold text-center text-indigo-700 mb-6">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-indigo-700 mb-2">
             Monthly Budget Tracker
         </h1>
-
-        <!-- User ID Display -->
-        <div id="userIdDisplay" class="text-center text-sm text-gray-500 mb-4 hidden">
-            User ID: <span id="userIdValue" class="font-mono text-gray-700"></span>
+        <div id="userIdDisplay" class="text-center text-xs text-gray-400 mb-6 hidden">
+            User ID: <span id="userIdValue" class="font-mono"></span>
         </div>
 
-        <!-- Income & Overall Summary -->
-        <div class="bg-indigo-50 p-4 rounded-lg shadow-inner mb-6">
-            <h2 class="text-xl sm:text-2xl font-semibold text-indigo-800 mb-3">Overall Summary</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-lg">
-                <p><span class="font-medium">Income:</span> <span id="incomeValue">0.00</span> EGP</p>
-                <p><span class="font-medium">Total Allocated:</span> <span id="totalAllocatedValue">0.00</span> EGP</p>
-                <p><span class="font-medium">Total Spent:</span> <span id="totalSpentValue">0.00</span> EGP</p>
-                <p id="overallRemainingText" class="sm:col-span-3 text-2xl font-bold">
-                    Remaining Budget: <span id="overallRemainingValue">0.00</span> EGP
-                </p>
-            </div>
-            <!-- Overall Progress Bar -->
-            <div class="overall-progress-bar-container">
-                <!-- Segments will be dynamically added here -->
-            </div>
-        </div>
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="spinner"></div>
 
-        <!-- Add Spending Section (Simplified as buttons are now FABs) -->
-        <div class="bg-blue-50 p-4 rounded-lg shadow-inner mb-6">
-            <h2 class="text-xl sm:text-2xl font-semibold text-blue-800 mb-3">Add Spending Options</h2>
+        <!-- Main Content (hidden until data loads) -->
+        <div id="mainContent" class="hidden">
+            <!-- Overall Summary (New Layout) -->
+            <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm mb-8">
+                <div class="flex justify-between items-center text-lg mb-2">
+                    <div>
+                        <p class="text-sm text-gray-500">Total Budget</p>
+                        <p class="font-bold text-2xl text-indigo-700"><span id="totalBudgetValue">0.00</span> EGP</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-500">Total Spent</p>
+                        <p class="font-bold text-2xl text-red-600"><span id="totalSpentValue">0.00</span> EGP</p>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                    <div id="overallProgressBar" class="bg-gradient-to-r from-blue-400 to-purple-500 h-4 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+                <p class="text-right font-semibold mt-1">Remaining: <span id="overallRemainingValue" class="text-green-600">0.00</span> EGP</p>
+            </div>
+
             <!-- Inline Notification Area -->
             <div id="inlineNotification" class="hidden"></div>
-            <p class="text-gray-700">Use the floating buttons at the bottom-right of the screen to add expenses or use voice input.</p>
-        </div>
 
-        <!-- Category Management Section -->
-        <div class="bg-purple-50 p-4 rounded-lg shadow-inner mb-6">
-            <h2 class="text-xl sm:text-2xl font-semibold text-purple-800 mb-3">Manage Categories</h2>
-            <button
-                id="addCategoryModalButton"
-                class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out"
-            >
-                Add New Category
-            </button>
-        </div>
+            <!-- Category Management Section -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-3">Manage Categories</h2>
+                <button id="addCategoryModalButton" class="btn btn-purple">Add New Category</button>
+            </div>
 
-        <!-- Category Details -->
-        <div id="categoryDetailsContainer" class="space-y-6">
-            <!-- Categories will be dynamically loaded here -->
-        </div>
+            <!-- Category Details (New Layout) -->
+            <div id="categoryDetailsContainer" class="space-y-8">
+                <!-- Sections for Needs, Wants, Savings will be generated here -->
+            </div>
 
-        <!-- Transaction History Section Trigger -->
-        <div class="bg-green-50 p-4 rounded-lg shadow-inner mt-6">
-            <h2 class="text-xl sm:text-2xl font-semibold text-green-800 mb-3">History & Archiving</h2>
-            <div class="flex flex-col sm:flex-row gap-4">
-                <button
-                    id="viewTransactionsButton"
-                    class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out flex-1"
-                >
-                    View All Transactions
-                </button>
-                <button
-                    id="viewMonthlyHistoryButton"
-                    class="px-6 py-3 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 transition duration-300 ease-in-out flex-1"
-                >
-                    View Monthly History
-                </button>
-                <button
-                    id="archiveMonthButton"
-                    class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 ease-in-out flex-1"
-                >
-                    Archive Current Month
-                </button>
+            <!-- History & Archiving Section -->
+            <div class="bg-gray-50 p-4 rounded-xl shadow-inner mt-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">History & Archiving</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="viewTransactionsButton" class="btn btn-green flex-1">View All Transactions</button>
+                    <button id="viewMonthlyHistoryButton" class="btn btn-yellow flex-1">View Monthly History</button>
+                    <button id="archiveMonthButton" class="btn btn-indigo flex-1">Archive Current Month</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Floating Action Button for Voice Input -->
-    <button id="voiceFab" class="fab-base" title="Start Voice Input">
-        <!-- Microphone icon (Lucide Icons SVG) -->
-        <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic icon-show">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" x2="12" y1="19" y2="22"/>
-        </svg>
-        <!-- Checkmark icon (Lucide Icons SVG) -->
-        <svg id="checkIcon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check icon-hide">
-            <polyline points="20 6 9 17 4 12"/>
-        </svg>
-    </button>
-
-    <!-- Floating Action Button for Add Expense -->
+    <!-- Floating Action Buttons -->
     <button id="addExpenseFab" class="fab-base" title="Add New Expense">
-        <!-- Plus icon (Lucide Icons SVG) -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+    <button id="voiceFab" class="fab-base" title="Start Voice Input (Feature coming soon)" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
     </button>
 
-    <!-- Category Add/Edit Modal (Hidden by default) -->
+    <!-- All Modals remain the same as they are not visible in the new design screenshot -->
+    <!-- Category Add/Edit Modal -->
     <div id="categoryModalOverlay" class="custom-modal-overlay hidden">
         <div class="custom-modal-content">
             <h2 id="categoryModalTitle" class="custom-modal-title">Add New Category</h2>
             <form id="categoryForm">
                 <div class="mb-4">
-                    <label for="modalCategoryName" class="block text-gray-700 text-sm font-bold mb-2">
-                        Category Name:
-                    </label>
-                    <input
-                        type="text"
-                        id="modalCategoryName"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        required
-                    />
+                    <label for="modalCategoryName" class="block text-gray-700 text-sm font-bold mb-2">Category Name:</label>
+                    <input type="text" id="modalCategoryName" class="form-input" required />
                 </div>
                 <div class="mb-4">
-                    <label for="modalAllocatedAmount" class="block text-gray-700 text-sm font-bold mb-2">
-                        Allocated Amount (EGP):
-                    </label>
-                    <input
-                        type="number"
-                        id="modalAllocatedAmount"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        min="0"
-                        step="0.01"
-                        required
-                    />
+                    <label for="modalAllocatedAmount" class="block text-gray-700 text-sm font-bold mb-2">Allocated Amount (EGP):</label>
+                    <input type="number" id="modalAllocatedAmount" class="form-input" min="0" step="0.01" required />
                 </div>
                 <div class="mb-6">
-                    <label for="modalCategoryType" class="block text-gray-700 text-sm font-bold mb-2">
-                        Category Type:
-                    </label>
-                    <select
-                        id="modalCategoryType"
-                        class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    >
+                    <label for="modalCategoryType" class="block text-gray-700 text-sm font-bold mb-2">Category Type:</label>
+                    <select id="modalCategoryType" class="form-input">
                         <option value="Needs">Needs</option>
                         <option value="Wants">Wants</option>
                         <option value="Savings">Savings</option>
                     </select>
                 </div>
                 <div class="custom-modal-buttons">
-                    <button
-                        type="submit"
-                        class="custom-modal-button bg-indigo-600 hover:bg-indigo-700"
-                    >
-                        Add Category
-                    </button>
-                    <button
-                        type="button"
-                        id="cancelCategoryModal"
-                        class="custom-modal-button bg-gray-400 hover:bg-gray-500"
-                    >
-                        Cancel
-                    </button>
+                    <button type="button" id="cancelCategoryModal" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                    <button type="submit" id="submitCategoryButton" class="custom-modal-button custom-modal-primary-button">Add Category</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Transaction Add/Edit Modal (Hidden by default) -->
+    <!-- Transaction Add/Edit Modal -->
     <div id="transactionModalOverlay" class="custom-modal-overlay hidden">
         <div class="custom-modal-content">
             <h2 id="transactionModalTitle" class="custom-modal-title">Add New Expense</h2>
             <form id="transactionForm">
                 <div class="mb-4">
-                    <label for="modalTransactionAmount" class="block text-gray-700 text-sm font-bold mb-2">
-                        Amount (EGP):
-                    </label>
-                    <input
-                        type="number"
-                        id="modalTransactionAmount"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        min="0"
-                        step="0.01"
-                        required
-                    />
+                    <label for="modalTransactionAmount" class="block text-gray-700 text-sm font-bold mb-2">Amount (EGP):</label>
+                    <input type="number" id="modalTransactionAmount" class="form-input" min="0" step="0.01" required />
                 </div>
                 <div class="mb-4">
-                    <label for="modalTransactionCategory" class="block text-gray-700 text-sm font-bold mb-2">
-                        Category:
-                    </label>
-                    <select
-                        id="modalTransactionCategory"
-                        class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        required
-                    >
-                        <option value="">Select Category</option>
-                        <!-- Categories will be populated by JS -->
-                    </select>
+                    <label for="modalTransactionCategory" class="block text-gray-700 text-sm font-bold mb-2">Category:</label>
+                    <select id="modalTransactionCategory" class="form-input" required></select>
                 </div>
                 <div class="mb-4">
-                    <label for="modalTransactionDescription" class="block text-gray-700 text-sm font-bold mb-2">
-                        Description (Optional):
-                    </label>
-                    <input
-                        type="text"
-                        id="modalTransactionDescription"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    />
+                    <label for="modalTransactionDescription" class="block text-gray-700 text-sm font-bold mb-2">Description (Optional):</label>
+                    <input type="text" id="modalTransactionDescription" class="form-input" />
                 </div>
                 <div class="mb-6">
-                    <label for="modalTransactionDate" class="block text-gray-700 text-sm font-bold mb-2">
-                        Date:
-                    </label>
-                    <input
-                        type="date"
-                        id="modalTransactionDate"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        required
-                    />
+                    <label for="modalTransactionDate" class="block text-gray-700 text-sm font-bold mb-2">Date:</label>
+                    <input type="date" id="modalTransactionDate" class="form-input" required />
                 </div>
                 <div class="custom-modal-buttons">
-                    <button
-                        type="submit"
-                        id="submitTransactionButton"
-                        class="custom-modal-button bg-indigo-600 hover:bg-indigo-700"
-                    >
-                        Add Expense
-                    </button>
-                    <button
-                        type="button"
-                        id="cancelTransactionModal"
-                        class="custom-modal-button bg-gray-400 hover:bg-gray-500"
-                    >
-                        Cancel
-                    </button>
+                    <button type="button" id="cancelTransactionModal" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                    <button type="submit" id="submitTransactionButton" class="custom-modal-button custom-modal-primary-button">Add Expense</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Transaction History Modal (New) -->
+    <!-- Transaction History Modal -->
     <div id="transactionHistoryModalOverlay" class="custom-modal-overlay hidden">
-        <div class="custom-modal-content">
+        <div class="custom-modal-content" style="max-width: 750px;">
             <h2 class="custom-modal-title">Transaction History</h2>
-            <div id="transactionList" class="space-y-3">
-                <!-- Transactions will be dynamically loaded here by category -->
-                <p class="text-gray-500" id="noTransactionsMessage">No transactions recorded yet.</p>
-            </div>
+            <div id="transactionList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
             <div class="custom-modal-buttons justify-center">
-                <button
-                    type="button"
-                    id="closeTransactionHistoryModal"
-                    class="custom-modal-button bg-gray-400 hover:bg-gray-500"
-                >
-                    Close
-                </button>
+                <button type="button" id="closeTransactionHistoryModal" class="custom-modal-button custom-modal-cancel">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Monthly History Modal (New) -->
+    <!-- Monthly History Modal -->
     <div id="monthlyHistoryModalOverlay" class="custom-modal-overlay hidden">
         <div class="custom-modal-content">
             <h2 class="custom-modal-title">Monthly Budget History</h2>
-            <div id="monthlyHistoryList" class="space-y-3">
-                <p class="text-gray-500" id="noMonthlyHistoryMessage">No monthly archives found.</p>
-                <!-- Monthly history items will be dynamically loaded here -->
-            </div>
+            <div id="monthlyHistoryList" class="space-y-3"></div>
             <div class="custom-modal-buttons justify-center">
-                <button
-                    type="button"
-                    id="closeMonthlyHistoryModal"
-                    class="custom-modal-button bg-gray-400 hover:bg-gray-500"
-                >
-                    Close
-                </button>
+                <button type="button" id="closeMonthlyHistoryModal" class="custom-modal-button custom-modal-cancel">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Archived Month Details Modal (New) -->
+    <!-- Archived Month Details Modal -->
     <div id="archivedMonthDetailsModalOverlay" class="custom-modal-overlay hidden">
         <div class="custom-modal-content">
-            <h2 id="archivedMonthDetailsTitle" class="custom-modal-title">Archived Budget Details for <span id="archivedMonthName"></span></h2>
-            <div class="mb-4">
-                <p class="text-lg font-semibold text-gray-800">Income: <span id="archivedMonthIncome"></span> EGP</p>
-            </div>
-            <div id="archivedMonthCategoriesSummary" class="space-y-3 mb-6">
-                <!-- Archived categories summary will be loaded here -->
-            </div>
-            <div id="archivedMonthTransactionsList" class="space-y-3">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Transactions:</h3>
-                <p class="text-gray-500" id="noArchivedTransactionsMessage">No transactions recorded for this month.</p>
-                <!-- Archived transactions will be loaded here by category -->
-            </div>
+            <h2 id="archivedMonthDetailsTitle" class="custom-modal-title">Archived Budget Details</h2>
+            <div id="archivedMonthContent" class="max-h-[60vh] overflow-y-auto pr-2"></div>
             <div class="custom-modal-buttons justify-center">
-                <button
-                    type="button"
-                    id="closeArchivedMonthDetailsModal"
-                    class="custom-modal-button bg-gray-400 hover:bg-gray-500"
-                >
-                    Close
-                </button>
+                <button type="button" id="closeArchivedMonthDetailsModal" class="custom-modal-button custom-modal-cancel">Close</button>
             </div>
         </div>
     </div>
-
+    
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmModalOverlay" class="custom-modal-overlay hidden">
+        <div class="custom-modal-content">
+            <h2 id="confirmModalTitle" class="custom-modal-title">Are you sure?</h2>
+            <p id="confirmModalMessage" class="text-center text-gray-600 mb-6">This action cannot be undone.</p>
+            <div class="custom-modal-buttons justify-center">
+                <button id="confirmModalCancel" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                <button id="confirmModalConfirm" class="custom-modal-button custom-modal-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDKs -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- IMPORTANT: REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIGURATION ---
-        // Your actual Firebase project configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAnDwriW_zqBkZDrdLcDrg82f5_UoJzeUE",
-            authDomain: "home-budget-app-c4f05.firebaseapp.com",
-            projectId: "home-budget-app-c4f05",
-            storageBucket: "home-budget-app-c4f05.firebasestorage.app",
-            messagingSenderId: "833811767859",
-            appId: "1:833811767859:web:67e93c3863298d41fd7946",
-            measurementId: "G-SEENLJLX3V"
-        };
-        // --- END OF IMPORTANT REPLACEMENTS ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSyAnDwriW_zqBkZDrdLcDrg82f5_UoJzeUE", authDomain: "home-budget-app-c4f05.firebaseapp.com", projectId: "home-budget-app-c4f05" };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Global state variables (mimicking React state)
-        let currentBudget = {
-            income: 27725, // EGP
-            categories: [
-                { id: 'groceries', name: 'Groceries (2 people + dog)', allocated: 6000, spent: 0, type: 'Needs', color: '#EF4444' },    // Red
-                { id: 'utilities', name: 'Utilities', allocated: 1500, spent: 0, type: 'Needs', color: '#F97316' },        // Orange
-                { id: 'homeOwnership', name: 'Home Ownership Costs', allocated: 1675, spent: 0, type: 'Needs', color: '#EAB308' },    // Amber
-                { id: 'fuel', name: 'Fuel for Car', allocated: 2000, spent: 0, type: 'Needs', color: '#22C55E' },         // Green
-                { id: 'healthcare', name: 'Basic Healthcare & Personal Care', allocated: 700, spent: 0, type: 'Needs', color: '#14B8A6' }, // Teal
-                { id: 'dogEssentials', name: 'Dog Essentials', allocated: 1200, spent: 0, type: 'Needs', color: '#06B6D4' },    // Cyan
-                { id: 'cigarettes', name: 'Cigarettes', allocated: 4500, spent: 0, type: 'Wants', color: '#3B82F6' },     // Blue
-                { id: 'gifts', name: 'Gifts (Social Obligations)', allocated: 1000, spent: 0, type: 'Wants', color: '#6366F1' },      // Indigo
-                { id: 'sweetTooth', name: 'Sweet Tooth', allocated: 500, spent: 0, type: 'Wants', color: '#8B5CF6' },      // Violet
-                { id: 'subscriptions', name: 'Subscriptions', allocated: 390, spent: 0, type: 'Wants', color: '#EC4899' }, // Pink
-                { id: 'diningOut', name: 'Take Out/Dining Out', allocated: 1500, spent: 0, type: 'Wants', color: '#F43F5E' },    // Rose
-                { id: 'miscWants', name: 'Miscellaneous Wants (incl. Shopping & Entertainment)', allocated: 2260, spent: 0, type: 'Wants', color: '#64748B' }, // Slate
-                { id: 'savings', name: 'Savings', allocated: 4000, spent: 0, type: 'Savings', color: '#A855F7' },        // Purple
-            ],
-            transactions: [] // New array to store transaction history for the current month
-        };
-        let currentUserId = null;
+        let currentBudget = null;
+        let userId = null;
         let isAuthReady = false;
-        let isListening = false; // New state for voice input
-        let showVoiceSuccess = false; // New state for voice input success icon
-        let microphonePermissionGranted = false; // New state for microphone permission
-        let editingCategory = null; // Stores category object when editing
-        let editingTransaction = null; // Stores transaction object when editing
+        let unsubscribeBudget = null;
+        let editingCategoryId = null;
+        let editingTransactionId = null;
 
-        // Mapping for AI extracted categories to internal budget IDs (supports English and Arabic)
-        const categoryMapping = {
-            "groceries": ["groceries", "بقالة", "مشتريات", "سوبر ماركت", "supermarket", "food", "اكل", "طعام", "carrefour", "spinneys", "metro market", "أسواق", "خضروات", "فواكه", "بضائع", "لحوم", "دواجن", "ألبان", "خبز", "بقالة", "اولاد الحاج رجب", "أولاد الحاج رجب", "هايب", "hyper one", "هايبر وان"],
-            "utilities": ["utilities", "فواتير", "كهرباء", "مياه", "غاز", "انترنت", "bills", "electricity", "water", "gas", "internet", "فاتورة", "اتصالات"],
-            "homeOwnership": ["home ownership", "صيانة منزل", "رسوم مبنى", "نظافة شقة", "home maintenance", "rent", "housing", "ايجار", "صيانة", "منزل", "عقارات"],
-            "fuel": ["fuel", "وقود", "بنزين", "gas", "petrol", "car", "سيارة", "محروقات", "بنزينه"],
-            "healthcare": ["healthcare", "صحة", "عناية شخصية", "صيدلية", "pharmacy", "doctor", "health", "personal care", "دكتور", "علاج", "ادوية"],
-            "dogEssentials": ["dog essentials", "مستلزمات كلب", "طعام كلاب", "بيطري", "pet food", "vet", "dog food", "حيوانات", "كلاب", "قطط"],
-            "cigarettes": ["cigarettes", "سجائر", "دخان", "smoking", "دخان"],
-            "gifts": ["gifts", "هيا", "مناسبات اجتماعية", "presents", "social", "هدية"],
-            "sweetTooth": ["sweet tooth", "حلويات", "سكريات", "dessert", "sweets", "chocolate", "شوكولاتة", "كيك", "جاتوه"],
-            "subscriptions": ["subscriptions", "اشتراكات", "نتفليكس", "نتفلكس", "جوجل ون", "سبوتيفاي", "netflix", "spotify", "google one", "apps", "تطبيقات", "اشتراك"],
-            "diningOut": ["take out", "dining out", "مطاعم", "وجبات سريعة", "خارج المنزل", "restaurant", "food delivery", "eating out", "مطعم", "وجبات", "كافيه", "قهوة", "مقهى"],
-            "miscWants": ["miscellaneous wants", "متفرقات", "تسوق", "ترفيه", "أخرى", "shopping", "entertainment", "other", "شراء", "ترفيه", "ملابس", "احذية", "الكترونيات", "decathlon", "ديكاتلون", "رياضة", "sports", "hyper one", "هايبر وان", "butcher", "جزار", "مخبز", "مكتبة", "ألعاب", "هوايات", "أدوات", "منزلية", "مفروشات", "أجهزة", "كهربائية", "ديكور", "أثاث", "مستحضرات تجميل", "عطور", "إكسسوارات", "مجوهات", "ساعات", "حقائب", "أمتعة", "كتب", "مجلات", "جرائد", "قرطاسية", "لوازم مكتبية", "أدوات مدرسية", "أدوات فنية", "آلات موسيقية", "أدوات رياضية", "معدات رياضية", "أدوات تخييم", "أدوات صيد", "أدوات غطس", "أدوات سباحة", "أدوات لياقة", "أدوات بناء", "أدوات حدائق", "أدوات سيارات", "قطع غيار", "إطارات", "بطاريات", "زيوت", "فلاتر", "إصلاحات", "صيانة", "خدمات", "تأمين", "رسوم", "ضرائب", "غرامات", "تبرعات", "مساعدات", "تعليم", "دورات", "ورش عمل", "كتب دراسية", "لوازم مدرسية", "أقساط", "رسوم دراسية", "مصاريف", "متنوعة", "أخرى", "عامة", "غير مصنفة", "غير محددة", "متفرقات", "أخرى", "عامة", "غير مصنفة", "غير محددة"],
-            "savings": ["savings", "ادخار", "توفير", "save"]
+        const dom = {
+            loadingSpinner: document.getElementById('loadingSpinner'),
+            mainContent: document.getElementById('mainContent'),
+            userIdDisplay: document.getElementById('userIdDisplay'),
+            userIdValue: document.getElementById('userIdValue'),
         };
 
+        const defaultCategoryIcon = `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.432 0l6.568-6.568a2.426 2.426 0 0 0 0-3.432L12.586 2.586z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>`;
 
-        // --- Utility Functions ---
+        const defaultBudget = {
+            income: 27725,
+            categories: [
+                { id: 'groceries', name: 'Groceries', allocated: 6000, spent: 0, type: 'Needs', color: '#EF4444', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.16"/></svg>` },
+                { id: 'utilities', name: 'Utilities', allocated: 1500, spent: 0, type: 'Needs', color: '#F97316', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m13 10-3 5h4l-3 5"/></svg>` },
+                { id: 'homeOwnership', name: 'Home Ownership', allocated: 1675, spent: 0, type: 'Needs', color: '#EAB308', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>` },
+                { id: 'fuel', name: 'Fuel for Car', allocated: 2000, spent: 0, type: 'Needs', color: '#22C55E', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg>` },
+                { id: 'healthcare', name: 'Healthcare', allocated: 700, spent: 0, type: 'Needs', color: '#14B8A6', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.7-1 2.1 4.2 3-10.5 1.7 5.3h1.7"/></svg>` },
+                { id: 'dogEssentials', name: 'Dog Essentials', allocated: 1200, spent: 0, type: 'Needs', color: '#06B6D4', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-7 0V15a5 5 0 0 1 5-5z"/><path d="M12 14v6"/><path d="M8 14v6"/><path d="M16 14v6"/></svg>` },
+                { id: 'cigarettes', name: 'Cigarettes', allocated: 4500, spent: 0, type: 'Wants', color: '#3B82F6', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Z"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>` },
+                { id: 'gifts', name: 'Gifts', allocated: 1000, spent: 0, type: 'Wants', color: '#6366F1', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>` },
+                { id: 'sweetTooth', name: 'Sweet Tooth', allocated: 500, spent: 0, type: 'Wants', color: '#8B5CF6', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2.4 2.4 0 0 0-2.4 2.4c0 1.6.8 2.4 1.6 3.2.7.7 1.2 1.2 1.2 2.2v1.2c0 .4-.2.8-.4 1-.2.3-.5.5-.8.6-.7.3-1.4.2-2.1-.2-1.1-.6-2.4-1.6-3.6-2.5C4.3 9.3 3.3 8.5 2.5 7.7.8 6.1 2 3.8 3.4 2.8 4.9 1.8 7 2.4 7.8 3c.8.7 1.5 1.8 2.2 2.8.3.4.7.8 1.1 1.2.2.2.4.3.6.4.2.1.4.1.6 0 .2-.1.4-.2.6-.4.4-.4.8-.8 1.1-1.2.8-1 1.5-2.1 2.2-2.8.8-.7 2.9-1.2 4.4-0.2s2.6 3.3 1.7 4.9c-.8.8-1.8 1.6-2.9 2.4-1.2.9-2.5 1.9-3.6 2.5-1.4.8-2.9.8-4.3.2-1.4-.6-2.5-1.8-2.7-3.3v-1.2c0-1-.4-1.5-1.2-2.2-.8-.8-1.6-1.6-1.6-3.2A2.4 2.4 0 0 0 12 2z"/><path d="M12 12.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>` },
+                { id: 'subscriptions', name: 'Subscriptions', allocated: 390, spent: 0, type: 'Wants', color: '#EC4899', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>` },
+                { id: 'diningOut', name: 'Dining Out', allocated: 1500, spent: 0, type: 'Wants', color: '#F43F5E', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>` },
+                { id: 'miscWants', name: 'Miscellaneous Wants', allocated: 2260, spent: 0, type: 'Wants', color: '#64748B', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>` },
+                { id: 'savings', name: 'Savings', allocated: 4000, spent: 0, type: 'Savings', color: '#A855F7', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M8 12h7"/><path d="M12 7v10"/></svg>` },
+            ],
+            transactions: []
+        };
 
-        function showNotification(message, type) {
-            console.log("Showing notification:", message, "Type:", type); // Added console log
-            const inlineNotification = document.getElementById('inlineNotification');
-            inlineNotification.textContent = message;
-            
-            // Clear previous type classes and hide it initially
-            inlineNotification.classList.remove('success', 'warning', 'danger', 'info', 'show');
-            inlineNotification.classList.add('hidden'); // Ensure it's hidden before applying new classes
-
-            // Add new type class
-            if (type === 'success') {
-                inlineNotification.classList.add('success', 'bg-green-100', 'text-green-800');
-            } else if (type === 'warning') {
-                inlineNotification.classList.add('warning', 'bg-yellow-100', 'text-yellow-800');
-            } else if (type === 'danger') {
-                inlineNotification.classList.add('danger', 'bg-red-100', 'text-red-800');
-            } else if (type === 'info') {
-                inlineNotification.classList.add('info', 'bg-blue-100', 'text-blue-800');
-            }
-            
-            inlineNotification.classList.remove('hidden'); // Show the notification
-            inlineNotification.classList.add('show'); // Trigger opacity transition
-            
-            // Set a timeout to hide the notification
-            setTimeout(clearNotification, 2000); 
-        }
-
-        function clearNotification() {
-            const inlineNotification = document.getElementById('inlineNotification');
-            inlineNotification.classList.remove('show'); // Start opacity transition out
-            // Hide completely after transition
+        function showNotification(message, type = 'info', duration = 3000) {
+            const el = document.getElementById('inlineNotification');
+            el.textContent = message;
+            el.className = 'hidden';
+            el.classList.add(type, 'show');
             setTimeout(() => {
-                inlineNotification.classList.add('hidden');
-                inlineNotification.classList.remove('success', 'warning', 'danger', 'info'); // Clean up classes
-            }, 300); // Match CSS transition duration
+                el.classList.remove('show');
+                setTimeout(() => el.classList.add('hidden'), 300);
+            }, duration);
         }
 
-        function getOverallRemainingColor(remaining) {
-            const totalIncomeAllocated = currentBudget.categories.filter(cat => cat.type !== 'Savings').reduce((sum, cat) => sum + cat.allocated, 0);
-            if (remaining < 0) {
-                return 'text-red-600';
-            } else if (totalIncomeAllocated > 0 && remaining <= 0.2 * totalIncomeAllocated) {
-                return 'text-yellow-600';
-            }
-            return 'text-green-600';
+        function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        async function showConfirmModal(title, message) {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalMessage').textContent = message;
+            showModal('confirmModalOverlay');
+            return new Promise(resolve => {
+                const confirmBtn = document.getElementById('confirmModalConfirm');
+                const cancelBtn = document.getElementById('confirmModalCancel');
+                const onConfirm = () => { cleanup(); resolve(true); };
+                const onCancel = () => { cleanup(); resolve(false); };
+                const cleanup = () => {
+                    hideModal('confirmModalOverlay');
+                    confirmBtn.removeEventListener('click', onConfirm);
+                    cancelBtn.removeEventListener('click', onCancel);
+                };
+                confirmBtn.addEventListener('click', onConfirm);
+                cancelBtn.addEventListener('click', onCancel);
+            });
         }
 
-        // --- UI Rendering Functions ---
-
-        function renderSummary() {
-            const totalAllocated = currentBudget.categories.reduce((sum, cat) => sum + cat.allocated, 0);
-            const totalSpent = currentBudget.categories.reduce((sum, cat) => sum + cat.spent, 0);
-            const overallRemaining = currentBudget.income - totalSpent;
-
-            document.getElementById('incomeValue').textContent = currentBudget.income.toFixed(2);
-            document.getElementById('totalAllocatedValue').textContent = totalAllocated.toFixed(2);
-            document.getElementById('totalSpentValue').textContent = totalSpent.toFixed(2);
-            
-            const overallRemainingTextElement = document.getElementById('overallRemainingText');
-            overallRemainingTextElement.className = `sm:col-span-3 text-2xl font-bold ${getOverallRemainingColor(overallRemaining)}`;
-            document.getElementById('overallRemainingValue').textContent = overallRemaining.toFixed(2);
-
-            // Render Overall Progress Bar
-            const progressBarContainer = document.querySelector('.overall-progress-bar-container');
-            progressBarContainer.innerHTML = ''; // Clear existing segments
-
-            let currentSpentPercentage = 0;
-            currentBudget.categories.forEach(category => {
-                const categorySpentPercentage = (category.spent / currentBudget.income) * 100;
-                if (categorySpentPercentage > 0) {
-                    const segment = document.createElement('div');
-                    segment.className = 'overall-progress-bar-segment';
-                    segment.style.width = `${categorySpentPercentage}%`;
-                    segment.style.backgroundColor = category.color;
-                    segment.title = `${category.name}: ${category.spent.toFixed(2)} EGP`; // Tooltip
-                    progressBarContainer.appendChild(segment);
-                    currentSpentPercentage += categorySpentPercentage;
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                isAuthReady = true;
+                dom.userIdValue.textContent = userId;
+                dom.userIdDisplay.classList.remove('hidden');
+                await setupBudgetListener();
+            } else {
+                try {
+                    if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
+                    else await signInAnonymously(auth);
+                } catch (error) {
+                    console.error("Authentication failed:", error);
+                    showNotification("Could not connect to the service. Please refresh.", "danger");
                 }
-            });
+            }
+        });
 
-            // Add remaining budget segment
-            const remainingPercentage = Math.max(0, 100 - currentSpentPercentage);
-            if (remainingPercentage > 0) {
-                const remainingSegment = document.createElement('div');
-                remainingSegment.className = 'overall-progress-bar-segment';
-                remainingSegment.style.width = `${remainingPercentage}%`;
-                remainingSegment.style.backgroundColor = overallRemaining >= 0 ? '#D1D5DB' : '#EF4444'; // Gray for remaining, Red for overspent
-                remainingSegment.title = `Remaining: ${overallRemaining.toFixed(2)} EGP`;
-                progressBarContainer.appendChild(remainingSegment);
+        async function setupBudgetListener() {
+            if (!isAuthReady || !userId) return;
+            if (unsubscribeBudget) unsubscribeBudget();
+            const budgetDocRef = doc(db, `artifacts/${appId}/users/${userId}/budget/current`);
+            unsubscribeBudget = onSnapshot(budgetDocRef, (docSnap) => {
+                dom.loadingSpinner.classList.add('hidden');
+                dom.mainContent.classList.remove('hidden');
+                if (docSnap.exists()) {
+                    currentBudget = docSnap.data();
+                    if (!currentBudget.transactions) currentBudget.transactions = [];
+                } else {
+                    currentBudget = JSON.parse(JSON.stringify(defaultBudget));
+                    setDoc(budgetDocRef, currentBudget).catch(error => console.error("Error creating default budget:", error));
+                }
+                renderUI();
+            }, (error) => {
+                console.error("Error listening to budget changes:", error);
+                showNotification("Error connecting to data. Please refresh.", "danger");
+                dom.loadingSpinner.classList.add('hidden');
+            });
+        }
+
+        async function saveBudget() {
+            if (!isAuthReady || !userId) return;
+            const budgetDocRef = doc(db, `artifacts/${appId}/users/${userId}/budget/current`);
+            try {
+                await setDoc(budgetDocRef, currentBudget);
+            } catch (error) {
+                console.error("Error saving budget:", error);
+                showNotification("Failed to save changes.", "danger");
             }
         }
 
-        function renderCategories() {
-            const categoryDetailsContainer = document.getElementById('categoryDetailsContainer');
-            categoryDetailsContainer.innerHTML = ''; // Clear existing categories
-
-            const types = ['Needs', 'Wants', 'Savings'];
-            types.forEach(type => {
-                const typeSection = document.createElement('div');
-                typeSection.className = 'bg-gray-50 p-4 rounded-lg shadow-inner';
-                typeSection.innerHTML = `
-                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-4">${type}</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="categoryGrid-${type}">
-                        <!-- Category cards will go here -->
-                    </div>
-                `;
-                categoryDetailsContainer.appendChild(typeSection);
-
-                const categoryGrid = typeSection.querySelector(`#categoryGrid-${type}`);
-                currentBudget.categories.filter(cat => cat.type === type).forEach(category => {
-                    const categoryCard = document.createElement('div');
-                    categoryCard.className = 'bg-white p-4 rounded-lg shadow-md border border-gray-200 flex flex-col items-center text-center';
-                    
-                    const percentage = category.allocated > 0 ? Math.min(100, (category.spent / category.allocated) * 100) : 0;
-                    const radius = (100 - 8) / 2; // size - strokeWidth
-                    const circumference = radius * 2 * Math.PI;
-                    const offset = circumference - (percentage / 100) * circumference;
-                    let strokeColor = category.color || '#22C55E'; // Use category color, fallback to green-500
-                    if (percentage >= 100) {
-                        strokeColor = '#EF4444'; // Always red if 100% or more
-                    } else if (percentage >= 80) {
-                        strokeColor = '#EAB308'; // Always yellow if 80% or more
-                    }
-
-                    categoryCard.innerHTML = `
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${category.name}</h3>
-                        <div class="circular-progress-container" style="width: 100px; height: 100px;">
-                            <svg class="transform -rotate-90" width="100" height="100">
-                                <circle
-                                    class="text-gray-300"
-                                    stroke="currentColor"
-                                    stroke-width="8"
-                                    fill="transparent"
-                                    r="${radius}"
-                                    cx="50"
-                                    cy="50"
-                                />
-                                <circle
-                                    class="transition-all duration-500 ease-in-out"
-                                    stroke="${strokeColor}"
-                                    stroke-width="8"
-                                    fill="transparent"
-                                    r="${radius}"
-                                    cx="50"
-                                    cy="50"
-                                    stroke-dasharray="${circumference}"
-                                    stroke-dashoffset="${offset}"
-                                    stroke-linecap="round"
-                                />
-                            </svg>
-                            <div class="circular-progress-text-container">
-                                <span class="circular-progress-percentage">${percentage.toFixed(0)}%</span>
-                                <p class="circular-progress-spent-text">Spent</p>
-                            </div>
-                        </div>
-                        <div class="mt-3 text-sm w-full">
-                            <p class="text-gray-600">Allocated: ${category.allocated.toFixed(2)} EGP</p>
-                            <p class="text-gray-600">Spent: ${category.spent.toFixed(2)} EGP</p>
-                            <p class="font-medium mt-1" style="color: ${category.color || '#374151'};">
-                                Remaining: ${(category.allocated - category.spent).toFixed(2)} EGP
-                            </p>
-                            <div class="flex justify-center gap-2 mt-3">
-                                <button data-id="${category.id}" class="edit-category-btn p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition duration-200" title="Edit Category">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                                </button>
-                                <button data-id="${category.id}" class="delete-category-btn p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition duration-200" title="Delete Category">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    categoryGrid.appendChild(categoryCard);
-                });
-            });
-
-            // Populate category select dropdown for transaction modal
-            const transactionCategoryDropdown = document.getElementById('modalTransactionCategory');
-            transactionCategoryDropdown.innerHTML = '<option value="">Select Category</option>';
-            currentBudget.categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id;
-                option.textContent = `${category.name} (${category.type})`;
-                transactionCategoryDropdown.appendChild(option);
-            });
-        }
-
-        function renderTransactions() {
-            const transactionListContainer = document.getElementById('transactionList');
-            transactionListContainer.innerHTML = ''; // Clear existing transactions
-
-            if (currentBudget.transactions.length === 0) {
-                transactionListContainer.innerHTML = '<p class="text-gray-500" id="noTransactionsMessage">No transactions recorded yet.</p>';
-                return;
-            }
-
-            // Group transactions by category
-            const transactionsByCategory = currentBudget.transactions.reduce((acc, transaction) => {
-                const categoryId = transaction.categoryId;
-                if (!acc[categoryId]) {
-                    acc[categoryId] = [];
-                }
-                acc[categoryId].push(transaction);
-                return acc;
-            }, {});
-
-            // Sort categories by their display order (e.g., Needs, Wants, Savings)
-            const sortedCategoryIds = ['Needs', 'Wants', 'Savings'].flatMap(type =>
-                currentBudget.categories
-                    .filter(cat => cat.type === type && transactionsByCategory[cat.id])
-                    .map(cat => cat.id)
-            );
-
-            sortedCategoryIds.forEach(categoryId => {
-                const category = currentBudget.categories.find(cat => cat.id === categoryId);
-                const transactions = transactionsByCategory[categoryId];
-
-                if (!category || !transactions || transactions.length === 0) return; // Skip if no transactions for this category
-
-                const categorySpent = transactions.reduce((sum, t) => sum + t.amount, 0);
-                const categoryPercentage = category.allocated > 0 ? (categorySpent / category.allocated) * 100 : 0;
-                let progressBarColor = category.color || '#22C55E'; // Default to category color
-                if (categoryPercentage >= 100) {
-                    progressBarColor = '#EF4444'; // Red if overspent
-                } else if (categoryPercentage >= 80) {
-                    progressBarColor = '#EAB308'; // Yellow if nearing limit
-                }
-
-                const detailsElement = document.createElement('details');
-                detailsElement.className = 'category-section-details';
-                // Categories are now collapsed by default, so no 'open' attribute
-
-                const summaryElement = document.createElement('summary');
-                summaryElement.className = 'category-section-summary';
-                summaryElement.innerHTML = `
-                    <div class="flex items-center">
-                        <span>${category.name} (${category.type})</span>
-                        <div class="category-history-progress-bar">
-                            <div class="category-history-progress-segment" style="width: ${Math.min(100, categoryPercentage)}%; background-color: ${progressBarColor};"></div>
-                        </div>
-                    </div>
-                `;
-                detailsElement.appendChild(summaryElement);
-
-                const contentDiv = document.createElement('div');
-                contentDiv.className = 'category-section-content space-y-2';
-
-                // Sort transactions within each category by date, newest first
-                const sortedCategoryTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                sortedCategoryTransactions.forEach(transaction => {
-                    const transactionCard = document.createElement('div');
-                    transactionCard.className = 'bg-white p-3 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-center';
-                    transactionCard.innerHTML = `
-                        <div class="flex-1 text-left mb-2 sm:mb-0">
-                            <p class="text-lg font-semibold text-gray-800">${transaction.description || 'No description'}</p>
-                            <p class="text-sm text-gray-500">${new Date(transaction.date).toLocaleDateString()}</p>
-                        </div>
-                        <div class="flex-shrink-0 text-right sm:ml-4">
-                            <p class="text-xl font-bold text-red-600 mb-2">${transaction.amount.toFixed(2)} EGP}</p>
-                            <div class="flex justify-end gap-2">
-                                <button data-id="${transaction.id}" class="edit-transaction-btn p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition duration-200" title="Edit Transaction">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                                </button>
-                                <button data-id="${transaction.id}" class="delete-transaction-btn p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition duration-200" title="Delete Transaction">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    contentDiv.appendChild(transactionCard);
-                });
-                detailsElement.appendChild(contentDiv);
-                transactionListContainer.appendChild(detailsElement);
-            });
-
-            // Re-attach event listeners for edit/delete transaction buttons after rendering
-            document.querySelectorAll('#transactionList .edit-transaction-btn').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const transactionId = event.currentTarget.dataset.id;
-                    const transactionToEdit = currentBudget.transactions.find(t => t.id === transactionId);
-                    openTransactionModal(transactionToEdit);
-                });
-            });
-            document.querySelectorAll('#transactionList .delete-transaction-btn').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const transactionId = event.currentTarget.dataset.id;
-                    handleDeleteTransaction(transactionId);
-                });
-            });
-        }
-
-        function updateUI() {
+        function renderUI() {
+            if (!currentBudget) return;
             renderSummary();
             renderCategories();
+        }
+
+        function renderSummary() {
+            const totalSpent = currentBudget.categories.reduce((sum, cat) => sum + cat.spent, 0);
+            const overallRemaining = currentBudget.income - totalSpent;
+            const spentPercentage = currentBudget.income > 0 ? (totalSpent / currentBudget.income) * 100 : 0;
+
+            document.getElementById('totalBudgetValue').textContent = currentBudget.income.toFixed(2);
+            document.getElementById('totalSpentValue').textContent = totalSpent.toFixed(2);
             
-            // Update UI element states based on global variables
-            const userIdDisplay = document.getElementById('userIdDisplay');
-            const userIdValue = document.getElementById('userIdValue');
-            const voiceFab = document.getElementById('voiceFab');
-            const micIcon = document.getElementById('micIcon');
-            const checkIcon = document.getElementById('checkIcon');
-            const addExpenseFab = document.getElementById('addExpenseFab');
-
-
-            if (currentUserId) {
-                userIdDisplay.classList.remove('hidden');
-                userIdValue.textContent = currentUserId;
-            } else {
-                userIdDisplay.classList.add('hidden');
-            }
-
-            // Voice FAB state and icon display
-            voiceFab.disabled = !isAuthReady || !currentUserId; // Only disable if not authenticated or no user ID
+            const remainingEl = document.getElementById('overallRemainingValue');
+            remainingEl.textContent = overallRemaining.toFixed(2);
+            remainingEl.className = `font-bold ${overallRemaining < 0 ? 'text-red-600' : 'text-green-600'}`;
             
-            if (isListening) {
-                voiceFab.classList.add('listening');
-                micIcon.classList.remove('icon-hide');
-                micIcon.classList.add('icon-show');
-                checkIcon.classList.remove('icon-show');
-                checkIcon.classList.add('icon-hide');
-            } else if (showVoiceSuccess) {
-                voiceFab.classList.remove('listening');
-                micIcon.classList.remove('icon-show');
-                micIcon.classList.add('icon-hide');
-                checkIcon.classList.remove('icon-hide');
-                checkIcon.classList.add('icon-show');
-            } else {
-                voiceFab.classList.remove('listening');
-                micIcon.classList.remove('icon-hide');
-                micIcon.classList.add('icon-show');
-                checkIcon.classList.remove('icon-show');
-                checkIcon.classList.add('icon-hide');
-            }
-
-            // Add Expense FAB state
-            addExpenseFab.disabled = !isAuthReady || !currentUserId;
+            document.getElementById('overallProgressBar').style.width = `${Math.min(100, spentPercentage)}%`;
         }
+        
+        function renderCategories() {
+            const container = document.getElementById('categoryDetailsContainer');
+            container.innerHTML = '';
+            const types = ['Needs', 'Wants', 'Savings'];
 
+            types.forEach(type => {
+                const categoriesOfType = currentBudget.categories.filter(c => c.type === type);
+                if (categoriesOfType.length === 0) return;
 
-        // --- Firebase Interaction Functions ---
-
-        async function updateBudgetInFirestore() {
-            if (!currentUserId) {
-                showNotification('User not authenticated. Data not saved.', 'warning');
-                return;
-            }
-            const userBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/budget/current`);
-            try {
-                await setDoc(userBudgetDocRef, currentBudget);
-                // Notification handled by snapshot listener
-            } catch (error) {
-                console.error("Error saving budget to Firestore:", error);
-                showNotification(`Error saving data: ${error.message}`, 'danger');
-            }
-        }
-
-        // --- Core Logic Functions ---
-
-        // Recalculates spent amount for all categories based on current transactions
-        function recalculateCategorySpent() {
-            // Reset all spent amounts to zero
-            currentBudget.categories.forEach(cat => cat.spent = 0);
-
-            // Sum up spent amounts from transactions
-            currentBudget.transactions.forEach(transaction => {
-                const category = currentBudget.categories.find(cat => cat.id === transaction.categoryId);
-                if (category) {
-                    category.spent += transaction.amount;
-                }
-            });
-        }
-
-        function addTransaction(categoryId, amount, description, date) {
-            const newTransaction = {
-                id: Date.now().toString(), // Simple unique ID
-                categoryId: categoryId,
-                amount: parseFloat(amount),
-                description: description || '',
-                date: date || new Date().toISOString().split('T')[0] // ISO format (YYYY-MM-DD)
-            };
-            currentBudget.transactions.push(newTransaction);
-            recalculateCategorySpent();
-            updateBudgetInFirestore();
-            const categoryName = currentBudget.categories.find(cat => cat.id === categoryId)?.name || 'Unknown Category';
-            showNotification(`Expense of ${amount.toFixed(2)} EGP added to ${categoryName}!`, 'success');
-            
-            // Show success icon for voice input
-            if (isListening) { // Only if the transaction was triggered by voice
-                showVoiceSuccess = true;
-                updateUI(); // Update UI to show checkmark
-                setTimeout(() => {
-                    showVoiceSuccess = false;
-                    isListening = false; // Reset listening state
-                    updateUI(); // Revert to microphone
-                }, 1500); // Show checkmark for 1.5 seconds
-            }
-        }
-
-        function editTransaction(transactionId, newCategoryId, newAmount, newDescription, newDate) {
-            const transactionIndex = currentBudget.transactions.findIndex(t => t.id === transactionId);
-            if (transactionIndex !== -1) {
-                currentBudget.transactions[transactionIndex] = {
-                    id: transactionId,
-                    categoryId: newCategoryId,
-                    amount: parseFloat(newAmount),
-                    description: newDescription || '',
-                    date: newDate || new Date().toISOString().split('T')[0]
-                };
-                recalculateCategorySpent();
-                updateBudgetInFirestore();
-                const categoryName = currentBudget.categories.find(cat => cat.id === newCategoryId)?.name || 'Unknown Category';
-                showNotification(`Expense updated to ${newAmount.toFixed(2)} EGP in ${categoryName}!`, 'success');
-            } else {
-                showNotification('Transaction not found.', 'warning');
-            }
-        }
-
-        function handleDeleteTransaction(transactionId) {
-            if (!currentUserId) {
-                showNotification('User not authenticated. Cannot delete transaction.', 'warning');
-                return;
-            }
-
-            const confirmModal = document.createElement('div');
-            confirmModal.className = 'custom-modal-overlay';
-            confirmModal.id = 'confirmModalOverlay'; // Add ID for specific z-index
-            confirmModal.innerHTML = `
-                <div class="custom-modal-content">
-                    <h2 class="custom-modal-title">Confirm Deletion</h2>
-                    <p class="text-gray-700 mb-6">Are you sure you want to delete this transaction? This action cannot be undone.</p>
-                    <div class="custom-modal-buttons">
-                        <button id="confirmDeleteTransactionBtn" class="custom-modal-button custom-modal-confirm">Delete</button>
-                        <button id="cancelDeleteTransactionBtn" class="custom-modal-button custom-modal-cancel">Cancel</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(confirmModal);
-
-            document.getElementById('confirmDeleteTransactionBtn').addEventListener('click', () => {
-                currentBudget.transactions = currentBudget.transactions.filter(t => t.id !== transactionId);
-                recalculateCategorySpent();
-                updateBudgetInFirestore();
-                showNotification('Transaction deleted successfully!', 'success');
-                confirmModal.remove();
-                // If transaction history modal is open, re-render it
-                if (!document.getElementById('transactionHistoryModalOverlay').classList.contains('hidden')) {
-                    renderTransactions();
-                }
-            });
-
-            document.getElementById('cancelDeleteTransactionBtn').addEventListener('click', () => {
-                confirmModal.remove();
-            });
-        }
-
-
-        // --- Voice Input Functions ---
-        let recognition;
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        async function startVoiceInput() {
-            if (!SpeechRecognition) {
-                showNotification('Speech Recognition is not supported in this browser.', 'danger');
-                return;
-            }
-            if (!currentUserId) {
-                showNotification('User not authenticated. Cannot use voice input.', 'warning');
-                return;
-            }
-            if (isListening) {
-                // If already listening, stop it.
-                recognition.stop();
-                return;
-            }
-
-            // Request microphone permission explicitly
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                microphonePermissionGranted = true;
-                // Stop the stream immediately as we only need the permission
-                stream.getTracks().forEach(track => track.stop());
-            } catch (err) {
-                console.error('Microphone access denied:', err);
-                microphonePermissionGranted = false;
-                showNotification('Microphone permission denied. Please enable it in your browser settings to use voice input.', 'danger');
-                updateUI();
-                return;
-            }
-
-            recognition = new SpeechRecognition();
-            recognition.continuous = false; // Listen for a single phrase
-            recognition.lang = 'en-US'; // You can set this to 'ar-EG' for Egyptian Arabic, or 'ar' for general Arabic
-            recognition.interimResults = false; // Only return final results
-
-            recognition.onstart = () => {
-                isListening = true;
-                showVoiceSuccess = false; // Ensure success icon is hidden on start
-                updateUI();
-                showNotification('Listening for your expense...', 'info');
-            };
-
-            recognition.onresult = (event) => {
-                try {
-                    const transcript = event.results[0][0].transcript;
-                    console.log('Voice transcript:', transcript);
-                    processVoiceCommand(transcript);
-                } catch (error) {
-                    console.error('Error in recognition.onresult:', error);
-                    showNotification(`Error processing voice input: ${error.message}.`, 'danger');
-                } finally {
-                    // isListening is now handled by addTransaction for success or onerror/onend for failure
-                }
-            };
-
-            recognition.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                showNotification(`Voice input error: ${event.error}. Please try again.`, 'danger');
-                isListening = false;
-                showVoiceSuccess = false; // Ensure success icon is off
-                updateUI();
-            };
-
-            recognition.onend = () => {
-                // This fires whether successful or not.
-                // Only set isListening to false here if it hasn't been set by success handler
-                if (!showVoiceSuccess) { // If success icon is not shown, means it wasn't a successful command
-                    isListening = false;
-                    updateUI();
-                }
-            };
-
-            recognition.start();
-        }
-
-        function processVoiceCommand(commandText) {
-            let lowerCaseCommand = commandText.toLowerCase();
-            let extractedAmount = 0;
-            let extractedCategory = "miscWants"; // Default category
-            let extractedDescription = commandText; // Default description is the full command
-
-            // 1. Extract Amount
-            // Try to find numerical amounts first (e.g., "50", "12.50")
-            const amountNumMatch = lowerCaseCommand.match(/(\d+(\.\d{1,2})?)\s*(egp|pounds|جنيه|جنيه مصري)?/);
-            if (amountNumMatch && amountNumMatch[1]) {
-                extractedAmount = parseFloat(amountNumMatch[1]);
-                // Remove the matched amount and currency from the command text
-                commandText = commandText.replace(new RegExp(amountNumMatch[0], 'i'), '').trim();
-                lowerCaseCommand = commandText.toLowerCase();
-            } else {
-                // If no direct number, try to parse numbers written as words
-                const wordToNumberMap = {
-                    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
-                    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
-                    "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000
-                };
-                let tempWords = lowerCaseCommand.split(/\s+/);
-                let currentNum = 0;
-                let numWordsConsumed = 0;
-
-                // Simple word-to-number parser. Handles "one hundred" but not "one hundred fifty" as a single number.
-                // It will try to find the first sequence of number words.
-                for (let i = 0; i < tempWords.length; i++) {
-                    const word = tempWords[i];
-                    if (wordToNumberMap[word] !== undefined) {
-                        numWordsConsumed++;
-                        if (word === "hundred") {
-                            currentNum = (currentNum === 0 ? 1 : currentNum) * 100;
-                        } else if (word === "thousand") {
-                            currentNum = (currentNum === 0 ? 1 : currentNum) * 1000;
-                        } else {
-                            currentNum += wordToNumberMap[word];
-                        }
-                    } else if (currentNum > 0) { // Stop if a non-number word is encountered after starting a number
-                        break;
-                    }
-                }
-                if (currentNum > 0) {
-                    extractedAmount = currentNum;
-                    // Remove the words that formed the number from the commandText
-                    const wordsToRemove = tempWords.slice(0, numWordsConsumed).join(' ');
-                    commandText = commandText.replace(new RegExp(`\\b${wordsToRemove}\\b`, 'gi'), '').trim();
-                    lowerCaseCommand = commandText.toLowerCase();
-                }
-            }
-
-
-            // 2. Extract Category
-            let foundCategory = false;
-            let bestCategoryMatch = null;
-            let longestMatchLength = 0;
-
-            // Iterate through categories to find the best match (longest keyword match)
-            for (const categoryId in categoryMapping) {
-                const keywords = Array.isArray(categoryMapping[categoryId]) ? categoryMapping[categoryId] : [categoryMapping[categoryId]];
-                for (const keyword of keywords) {
-                    const lowerCaseKeyword = keyword.toLowerCase();
-                    // Check for phrase match in the remaining command text
-                    if (lowerCaseCommand.includes(lowerCaseKeyword)) {
-                        // Prioritize longer matches to avoid "car" matching "healthcare" if "fuel for car" is intended
-                        if (lowerCaseKeyword.length > longestMatchLength) {
-                            bestCategoryMatch = categoryId;
-                            longestMatchLength = lowerCaseKeyword.length;
-                            foundCategory = true;
-                        }
-                    }
-                }
-            }
-
-            if (foundCategory) {
-                extractedCategory = bestCategoryMatch;
-                // Remove the matched category keyword from the commandText
-                const matchedKeyword = categoryMapping[extractedCategory].find(kw => lowerCaseCommand.includes(kw.toLowerCase()));
-                if (matchedKeyword) {
-                    commandText = commandText.replace(new RegExp(`\\b${matchedKeyword}\\b`, 'gi'), '').trim();
-                }
-                lowerCaseCommand = commandText.toLowerCase(); // Update for description
-            }
-
-            // 3. Refine Description
-            extractedDescription = commandText.trim();
-            if (extractedDescription === "" && extractedAmount > 0) {
-                extractedDescription = `Voice Entry for ${currentBudget.categories.find(c => c.id === extractedCategory)?.name || 'Unknown Category'}`;
-            } else if (extractedDescription === "") {
-                extractedDescription = `Uncategorized Voice Entry`;
-            }
-
-            console.log('Parsed - Amount:', extractedAmount, 'Category:', extractedCategory, 'Description:', extractedDescription);
-
-            if (!isNaN(extractedAmount) && extractedAmount > 0) {
-                addTransaction(extractedCategory, extractedAmount, extractedDescription, new Date().toISOString().split('T')[0]);
-                // The addTransaction function now handles its own notification with details and voice success animation
-            } else {
-                showNotification(`Could not understand voice command: "${commandText}". Please try again or add manually.`, 'warning');
-                isListening = false; // Reset listening state on failure
-                showVoiceSuccess = false; // Ensure success icon is off
-                updateUI();
-            }
-        }
-
-
-        // --- Category Management Functions ---
-
-        function handleSaveCategory(newCategoryData) {
-            if (!currentUserId) {
-                showNotification('User not authenticated. Cannot save category.', 'warning');
-                return;
-            }
-
-            let updatedCategories;
-            let message;
-            if (editingCategory) {
-                // Edit existing category
-                updatedCategories = currentBudget.categories.map(cat =>
-                    cat.id === newCategoryData.id ? newCategoryData : cat
-                );
-                message = `Category "${newCategoryData.name}" updated successfully!`;
-            } else {
-                // Add new category
-                updatedCategories = [...currentBudget.categories, { ...newCategoryData, spent: 0 }]; // New categories start with 0 spent
-                message = `Category "${newCategoryData.name}" added successfully!`;
-            }
-            currentBudget = { ...currentBudget, categories: updatedCategories };
-            recalculateCategorySpent(); // Recalculate if category allocations change
-            updateBudgetInFirestore();
-            showNotification(message, 'success');
-            closeCategoryModal();
-        }
-
-        function handleDeleteCategory(categoryId) {
-            if (!currentUserId) {
-                showNotification('User not authenticated. Cannot delete category.', 'warning');
-                return;
-            }
-
-            const confirmModal = document.createElement('div');
-            confirmModal.className = 'custom-modal-overlay';
-            confirmModal.id = 'confirmModalOverlay'; // Add ID for specific z-index
-            confirmModal.innerHTML = `
-                <div class="custom-modal-content">
-                    <h2 class="custom-modal-title">Confirm Deletion</h2>
-                    <p class="text-gray-700 mb-6">Are you sure you want to delete this category? All associated transactions will remain but will show as 'Unknown Category'.</p>
-                    <div class="custom-modal-buttons">
-                        <button id="confirmDeleteCategoryBtn" class="custom-modal-button custom-modal-confirm">Delete</button>
-                        <button id="cancelDeleteCategoryBtn" class="custom-modal-button custom-modal-cancel">Cancel</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(confirmModal);
-
-            document.getElementById('confirmDeleteCategoryBtn').addEventListener('click', () => {
-                const categoryToDelete = currentBudget.categories.find(cat => cat.id === categoryId);
-                currentBudget.categories = currentBudget.categories.filter(t => t.id !== categoryId);
-                recalculateCategorySpent();
-                updateBudgetInFirestore();
-                showNotification(`Category "${categoryToDelete ? categoryToDelete.name : 'Unknown'}" deleted successfully!`, 'success');
-                confirmModal.remove();
-                // If transaction history modal is open, re-render it
-                if (!document.getElementById('transactionHistoryModalOverlay').classList.contains('hidden')) {
-                    renderTransactions();
-                }
-            });
-
-            document.getElementById('cancelDeleteCategoryBtn').addEventListener('click', () => {
-                confirmModal.remove();
-            });
-        }
-
-        function openCategoryModal(category = null) {
-            editingCategory = category;
-            const modalOverlay = document.getElementById('categoryModalOverlay');
-            const modalTitle = document.getElementById('categoryModalTitle');
-            const modalCategoryName = document.getElementById('modalCategoryName');
-            const modalAllocatedAmount = document.getElementById('modalAllocatedAmount');
-            const modalCategoryType = document.getElementById('modalCategoryType');
-            const formSubmitButton = modalOverlay.querySelector('button[type="submit"]');
-
-            if (category) {
-                modalTitle.textContent = 'Edit Category';
-                modalCategoryName.value = category.name;
-                modalAllocatedAmount.value = category.allocated;
-                modalCategoryType.value = category.type;
-                formSubmitButton.textContent = 'Save Changes';
-            } else {
-                modalTitle.textContent = 'Add New Category';
-                modalCategoryName.value = '';
-                modalAllocatedAmount.value = '';
-                modalCategoryType.value = 'Needs';
-                formSubmitButton.textContent = 'Add Category';
-            }
-            modalOverlay.classList.remove('hidden');
-        }
-
-        function closeCategoryModal() {
-            document.getElementById('categoryModalOverlay').classList.add('hidden');
-            editingCategory = null;
-        }
-
-        // --- Transaction Modal Functions ---
-        function openTransactionModal(transaction = null) {
-            editingTransaction = transaction;
-            const modalOverlay = document.getElementById('transactionModalOverlay');
-            const modalTitle = document.getElementById('transactionModalTitle');
-            const modalAmount = document.getElementById('modalTransactionAmount');
-            const modalCategory = document.getElementById('modalTransactionCategory');
-            const modalDescription = document.getElementById('modalTransactionDescription');
-            const modalDate = document.getElementById('modalTransactionDate');
-            const formSubmitButton = document.getElementById('submitTransactionButton');
-
-            // Set today's date as default for new transactions
-            const today = new Date().toISOString().split('T')[0];
-
-            if (transaction) {
-                modalTitle.textContent = 'Edit Expense';
-                modalAmount.value = transaction.amount;
-                modalCategory.value = transaction.categoryId;
-                modalDescription.value = transaction.description;
-                modalDate.value = transaction.date;
-                formSubmitButton.textContent = 'Save Changes';
-            } else {
-                modalTitle.textContent = 'Add New Expense';
-                modalAmount.value = '';
-                modalCategory.value = '';
-                modalDescription.value = '';
-                modalDate.value = today; // Default to today
-                formSubmitButton.textContent = 'Add Expense';
-            }
-            modalOverlay.classList.remove('hidden');
-        }
-
-        function closeTransactionModal() {
-            document.getElementById('transactionModalOverlay').classList.add('hidden');
-            editingTransaction = null;
-        }
-
-        // --- Transaction History Modal Functions (New) ---
-        function openTransactionHistoryModal() {
-            const modalOverlay = document.getElementById('transactionHistoryModalOverlay');
-            renderTransactions(); // Render transactions inside the modal
-            modalOverlay.classList.remove('hidden');
-        }
-
-        function closeTransactionHistoryModal() {
-            document.getElementById('transactionHistoryModalOverlay').classList.add('hidden');
-        }
-
-        // --- Monthly History Functions (New) ---
-        async function archiveCurrentMonth() {
-            console.log("Archive Current Month: Function called.");
-            if (!currentUserId) {
-                showNotification('User not authenticated. Cannot archive month.', 'warning');
-                return;
-            }
-
-            // Get current date to determine the month being archived (e.g., if today is July 4, 2025, we archive July 2025)
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = (now.getMonth() + 1).toString().padStart(2, '0'); // getMonth() is 0-indexed
-            const monthYearId = `${year}-${month}`; // e.g., "2025-07"
-
-            // Create a deep copy of the current budget state to archive
-            const budgetToArchive = JSON.parse(JSON.stringify(currentBudget));
-            budgetToArchive.archiveDate = new Date().toISOString(); // Add an archive timestamp
-
-            const monthlyBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/monthly_budgets/${monthYearId}`);
-
-            try {
-                await setDoc(monthlyBudgetDocRef, budgetToArchive);
-                showNotification(`Budget for ${monthYearId} archived successfully!`, 'success');
-
-                // Reset current month's spent amounts and transactions for the new month
-                const resetCategories = currentBudget.categories.map(cat => ({
-                    ...cat,
-                    spent: 0 // Reset spent for all categories
-                }));
-                const newCurrentBudget = {
-                    ...currentBudget,
-                    categories: resetCategories,
-                    transactions: [] // Clear transactions for the new month
-                };
-
-                // Update the current budget in Firestore with reset values
-                const currentBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/budget/current`);
-                await setDoc(currentBudgetDocRef, newCurrentBudget);
+                const section = document.createElement('div');
+                section.className = 'mb-6';
                 
-                // Update local state immediately to reflect reset
-                currentBudget = newCurrentBudget;
-                updateUI(); // Re-render UI with reset values
+                const title = document.createElement('h3');
+                title.className = 'text-2xl font-bold text-gray-800 mb-4 pl-1';
+                title.textContent = type;
+                section.appendChild(title);
 
-            } catch (error) {
-                console.error("Archive Current Month: Error archiving month:", error);
-                showNotification(`Error archiving month: ${error.message}`, 'danger');
-            }
-        }
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+                section.appendChild(grid);
 
-        async function openMonthlyHistoryModal() {
-            console.log("Monthly History Modal: Function called.");
-            if (!currentUserId) {
-                showNotification('User not authenticated. Cannot view monthly history.', 'warning');
-                console.log("Monthly History Modal: User not authenticated. Aborting.");
-                return;
-            }
-
-            const monthlyHistoryList = document.getElementById('monthlyHistoryList');
-            // Get reference to noHistoryMessageElement BEFORE clearing monthlyHistoryList
-            const noHistoryMessageElement = document.getElementById('noMonthlyHistoryMessage');
-            
-            monthlyHistoryList.innerHTML = ''; // Clear previous list content, including the message element
-
-            const monthlyBudgetsCollectionRef = collection(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/monthly_budgets`);
-
-            try {
-                console.log("Monthly History Modal: Attempting to fetch archived months from Firestore.");
-                const querySnapshot = await getDocs(monthlyBudgetsCollectionRef);
-                const archivedMonths = [];
-                querySnapshot.forEach((doc) => {
-                    archivedMonths.push({ id: doc.id, data: doc.data() });
+                categoriesOfType.forEach(category => {
+                    grid.appendChild(createCategoryCard(category));
                 });
+                container.appendChild(section);
+            });
+            attachCategoryEventListeners();
+            updateTransactionCategoryDropdown();
+        }
+        
+        function createCategoryCard(category) {
+            const card = document.createElement('div');
+            const spent = category.spent || 0;
+            const allocated = category.allocated || 0;
+            const remaining = allocated - spent;
+            const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
 
-                console.log("Monthly History Modal: Fetched archived months:", archivedMonths);
+            card.className = 'category-card';
+            card.style.borderColor = category.color || '#cccccc';
+            
+            card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-2">
+                        ${category.icon || defaultCategoryIcon}
+                        <h4 class="font-bold text-lg text-gray-900">${category.name}</h4>
+                    </div>
+                    <div class="flex gap-2">
+                        <button data-edit-id="${category.id}" class="edit-category-btn p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                        </button>
+                        <button data-delete-id="${category.id}" class="delete-category-btn p-1 text-gray-400 hover:text-red-600 transition-colors">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">
+                        <span class="font-semibold text-gray-700">${spent.toFixed(2)}</span> / ${allocated.toFixed(2)} EGP
+                    </p>
+                    <div class="progress-bar-container mt-1">
+                        <div class="progress-bar-fill" style="width: ${Math.min(100, percentage)}%; background-color: ${category.color || '#cccccc'};"></div>
+                    </div>
+                     <p class="text-right text-sm mt-1 font-medium ${remaining < 0 ? 'text-red-500' : 'text-gray-600'}">
+                        ${remaining.toFixed(2)} EGP remaining
+                    </p>
+                </div>
+            `;
+            return card;
+        }
 
-                if (archivedMonths.length === 0) {
-                    // Re-add the message element if no archives are found
-                    const newMessage = document.createElement('p');
-                    newMessage.id = 'noMonthlyHistoryMessage';
-                    newMessage.className = 'text-gray-500';
-                    newMessage.textContent = "No monthly archives found. Archive a month first using the 'Archive Current Month' button!";
-                    monthlyHistoryList.appendChild(newMessage);
-                    console.log("Monthly History Modal: No archived months found. Displaying message.");
-                } else {
-                    // If archives exist, ensure the message is not there or is hidden
-                    // (It was already cleared by monthlyHistoryList.innerHTML = '';)
-                    // If we didn't clear it, we would do: noHistoryMessageElement.classList.add('hidden');
-                    
-                    // Sort months in descending order (newest first)
-                    archivedMonths.sort((a, b) => b.id.localeCompare(a.id));
+        function attachCategoryEventListeners() {
+            document.querySelectorAll('.edit-category-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    editingCategoryId = e.currentTarget.dataset.editId;
+                    const category = currentBudget.categories.find(c => c.id === editingCategoryId);
+                    if (category) {
+                        document.getElementById('categoryModalTitle').textContent = 'Edit Category';
+                        document.getElementById('submitCategoryButton').textContent = 'Save Changes';
+                        document.getElementById('modalCategoryName').value = category.name;
+                        document.getElementById('modalAllocatedAmount').value = category.allocated;
+                        document.getElementById('modalCategoryType').value = category.type;
+                        showModal('categoryModalOverlay');
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.delete-category-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const categoryIdToDelete = e.currentTarget.dataset.deleteId;
+                    handleDeleteCategory(categoryIdToDelete);
+                });
+            });
+        }
 
-                    archivedMonths.forEach(monthData => {
-                        const monthItem = document.createElement('div');
-                        monthItem.className = 'bg-gray-100 p-3 rounded-lg shadow-sm flex justify-between items-center';
-                        
-                        const dateParts = monthData.id.split('-');
-                        const monthName = new Date(dateParts[0], dateParts[1] - 1, 1).toLocaleString('en-US', { month: 'long' });
-                        const displayDate = `${monthName} ${dateParts[0]}`;
-
-                        monthItem.innerHTML = `
-                            <span class="font-semibold text-gray-800">${displayDate}</span>
-                            <button data-month-id="${monthData.id}" class="view-month-details-btn px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-200">
-                                View Details
-                            </button>
-                        `;
-                        monthlyHistoryList.appendChild(monthItem);
-                    });
-
-                    document.querySelectorAll('.view-month-details-btn').forEach(button => {
-                        button.addEventListener('click', (event) => {
-                            const monthId = event.target.dataset.monthId;
-                            const selectedMonthData = archivedMonths.find(m => m.id === monthId);
-                            if (selectedMonthData) {
-                                openArchivedMonthDetailsModal(selectedMonthData.data, monthId);
-                            }
-                        });
-                    });
-                    console.log("Monthly History Modal: Archived months rendered.");
-                }
-
-                const modalOverlay = document.getElementById('monthlyHistoryModalOverlay');
-                modalOverlay.classList.remove('hidden');
-                console.log("Monthly History Modal: Modal overlay 'hidden' class removed.");
-
-            } catch (error) {
-                console.error("Monthly History Modal: Error fetching monthly history:", error);
-                showNotification(`Error fetching monthly history: ${error.message}`, 'danger');
+        function updateTransactionCategoryDropdown() {
+             const categorySelect = document.getElementById('modalTransactionCategory');
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
+            currentBudget.categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                categorySelect.appendChild(option);
+            });
+        }
+        
+        async function handleDeleteCategory(categoryId) {
+            const category = currentBudget.categories.find(c => c.id === categoryId);
+            if (!category) return;
+            
+            const confirmed = await showConfirmModal('Delete Category?', `Are you sure you want to delete the "${category.name}" category? All associated transactions will also be deleted.`);
+            if (confirmed) {
+                currentBudget.categories = currentBudget.categories.filter(c => c.id !== categoryId);
+                currentBudget.transactions = currentBudget.transactions.filter(t => t.categoryId !== categoryId);
+                recalculateSpentAmounts();
+                await saveBudget();
+                showNotification(`Category "${category.name}" deleted.`, 'success');
             }
         }
 
-        function closeMonthlyHistoryModal() {
-            console.log("Monthly History Modal: Closing modal.");
-            document.getElementById('monthlyHistoryModalOverlay').classList.add('hidden');
+        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('modalCategoryName').value;
+            const allocated = parseFloat(document.getElementById('modalAllocatedAmount').value);
+            const type = document.getElementById('modalCategoryType').value;
+            
+            if (editingCategoryId) {
+                const category = currentBudget.categories.find(c => c.id === editingCategoryId);
+                if (category) {
+                    category.name = name;
+                    category.allocated = allocated;
+                    category.type = type;
+                }
+            } else {
+                currentBudget.categories.push({
+                    id: name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+                    name, allocated, spent: 0, type,
+                    color: `#${(Math.random()*0xFFFFFF<<0).toString(16).padStart(6,'0')}`,
+                    icon: defaultCategoryIcon
+                });
+            }
+            await saveBudget();
+            hideModal('categoryModalOverlay');
+            editingCategoryId = null;
+            showNotification(`Category ${editingCategoryId ? 'updated' : 'added'} successfully.`, 'success');
+        });
+
+        function openTransactionModal(transactionId = null) {
+            editingTransactionId = transactionId;
+            document.getElementById('transactionForm').reset();
+            updateTransactionCategoryDropdown();
+
+            if (transactionId) {
+                const transaction = currentBudget.transactions.find(t => t.id === transactionId);
+                if (transaction) {
+                    document.getElementById('transactionModalTitle').textContent = 'Edit Expense';
+                    document.getElementById('submitTransactionButton').textContent = 'Save Changes';
+                    document.getElementById('modalTransactionAmount').value = transaction.amount;
+                    document.getElementById('modalTransactionCategory').value = transaction.categoryId;
+                    document.getElementById('modalTransactionDescription').value = transaction.description;
+                    document.getElementById('modalTransactionDate').value = transaction.date;
+                }
+            } else {
+                document.getElementById('transactionModalTitle').textContent = 'Add New Expense';
+                document.getElementById('submitTransactionButton').textContent = 'Add Expense';
+                document.getElementById('modalTransactionDate').valueAsDate = new Date();
+            }
+            showModal('transactionModalOverlay');
         }
 
-        // --- Archived Month Details Modal Functions (New) ---
-        function openArchivedMonthDetailsModal(monthData, monthId) {
-            console.log("Archived Month Details Modal: Opening for month:", monthId);
-            const modalOverlay = document.getElementById('archivedMonthDetailsModalOverlay');
-            document.getElementById('archivedMonthName').textContent = monthId;
-            document.getElementById('archivedMonthIncome').textContent = monthData.income.toFixed(2);
+        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newTransaction = {
+                id: editingTransactionId || `trans-${Date.now()}`,
+                amount: parseFloat(document.getElementById('modalTransactionAmount').value),
+                categoryId: document.getElementById('modalTransactionCategory').value,
+                description: document.getElementById('modalTransactionDescription').value,
+                date: document.getElementById('modalTransactionDate').value,
+            };
 
-            const categoriesSummaryContainer = document.getElementById('archivedMonthCategoriesSummary');
-            categoriesSummaryContainer.innerHTML = '';
-
-            monthData.categories.forEach(category => {
-                const categorySummaryDiv = document.createElement('div');
-                categorySummaryDiv.className = 'bg-gray-100 p-2 rounded-md flex justify-between items-center';
-                const remaining = category.allocated - category.spent;
-                let remainingColor = 'text-gray-700';
-                if (remaining < 0) {
-                    remainingColor = 'text-red-600';
-                } else if (remaining <= 0.2 * category.allocated && category.allocated > 0) {
-                    remainingColor = 'text-yellow-600';
-                } else if (remaining >= 0) {
-                    remainingColor = 'text-green-600';
-                }
-
-                categorySummaryDiv.innerHTML = `
-                    <span class="font-medium">${category.name} (${category.type})</span>
-                    <div>
-                        <p class="text-sm text-gray-600">Allocated: ${category.allocated.toFixed(2)} EGP</p>
-                        <p class="text-sm text-gray-600">Spent: ${category.spent.toFixed(2)} EGP</p>
-                        <p class="text-sm font-semibold ${remainingColor}">Remaining: ${remaining.toFixed(2)} EGP</p>
-                    </div>
-                `;
-                categoriesSummaryContainer.appendChild(categorySummaryDiv);
+            if (editingTransactionId) {
+                const index = currentBudget.transactions.findIndex(t => t.id === editingTransactionId);
+                if (index > -1) currentBudget.transactions[index] = newTransaction;
+            } else {
+                currentBudget.transactions.push(newTransaction);
+            }
+            
+            recalculateSpentAmounts();
+            await saveBudget();
+            hideModal('transactionModalOverlay');
+            editingTransactionId = null;
+            showNotification('Transaction saved.', 'success');
+        });
+        
+        function recalculateSpentAmounts() {
+            currentBudget.categories.forEach(cat => cat.spent = 0);
+            currentBudget.transactions.forEach(trans => {
+                const category = currentBudget.categories.find(cat => cat.id === trans.categoryId);
+                if (category) category.spent += trans.amount;
             });
+        }
 
-            const transactionsListContainer = document.getElementById('archivedMonthTransactionsList');
-            transactionsListContainer.innerHTML = '<h3 class="text-xl font-semibold text-gray-700 mb-3">Transactions:</h3>';
-
-            if (monthData.transactions && monthData.transactions.length > 0) {
-                document.getElementById('noArchivedTransactionsMessage').classList.add('hidden');
-                const transactionsByCategory = monthData.transactions.reduce((acc, transaction) => {
-                    const category = monthData.categories.find(cat => cat.id === transaction.categoryId);
-                    const categoryName = category ? category.name : 'Unknown Category';
-                    if (!acc[categoryName]) {
-                        acc[categoryName] = [];
-                    }
-                    acc[categoryName].push(transaction);
+        document.getElementById('viewTransactionsButton').addEventListener('click', () => {
+             const listEl = document.getElementById('transactionList');
+            listEl.innerHTML = '';
+            
+            if (currentBudget.transactions.length === 0) {
+                listEl.innerHTML = '<p class="text-gray-500 text-center">No transactions recorded yet.</p>';
+            } else {
+                const grouped = currentBudget.transactions.reduce((acc, t) => {
+                    (acc[t.categoryId] = acc[t.categoryId] || []).push(t);
                     return acc;
                 }, {});
 
-                for (const categoryName in transactionsByCategory) {
-                    const categorySection = document.createElement('div');
-                    categorySection.className = 'bg-blue-50 p-3 rounded-md mb-2';
-                    categorySection.innerHTML = `<h4 class="font-semibold text-blue-800 mb-2">${categoryName}</h4>`;
-                    
-                    const sortedCategoryTransactions = [...transactionsByCategory[categoryName]].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                    sortedCategoryTransactions.forEach(transaction => {
-                        const transactionDiv = document.createElement('div');
-                        transactionDiv.className = 'bg-white p-2 rounded-md shadow-sm flex justify-between items-center mb-1';
-                        transactionDiv.innerHTML = `
-                            <div>
-                                <p class="font-medium">${transaction.description || 'No description'}</p>
-                                <p class="text-xs text-gray-500">${new Date(transaction.date).toLocaleDateString()}</p>
-                            </div>
-                            <span class="font-bold text-red-600">${transaction.amount.toFixed(2)} EGP</span>
-                        `;
-                        categorySection.appendChild(transactionDiv);
-                    });
-                    transactionsListContainer.appendChild(categorySection);
+                for (const categoryId in grouped) {
+                    const category = currentBudget.categories.find(c => c.id === categoryId);
+                    if (category) {
+                        const section = document.createElement('div');
+                        section.innerHTML = `<h3 class="font-semibold text-lg" style="color: ${category.color};">${category.name}</h3>`;
+                        const ul = document.createElement('ul');
+                        ul.className = 'space-y-2 pl-4';
+                        grouped[categoryId]
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))
+                            .forEach(t => {
+                                const li = document.createElement('li');
+                                li.className = 'flex justify-between items-center bg-white p-2 rounded-md shadow-sm';
+                                li.innerHTML = `
+                                    <div>
+                                        <p class="font-medium">${t.description || 'Expense'}</p>
+                                        <p class="text-sm text-gray-500">${new Date(t.date).toLocaleDateString()}</p>
+                                    </div>
+                                    <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
+                                `;
+                                ul.appendChild(li);
+                            });
+                        section.appendChild(ul);
+                        listEl.appendChild(section);
+                    }
                 }
-
-            } else {
-                document.getElementById('noArchivedTransactionsMessage').classList.remove('hidden');
             }
+            showModal('transactionHistoryModalOverlay');
+        });
 
-            modalOverlay.classList.remove('hidden');
-            console.log("Archived Month Details Modal: Modal overlay 'hidden' class removed.");
-        }
-
-        function closeArchivedMonthDetailsModal() {
-            console.log("Archived Month Details Modal: Closing modal.");
-            document.getElementById('archivedMonthDetailsModalOverlay').classList.add('hidden');
-        }
-
-
-        // --- Event Listeners and Initialization ---
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initial UI update for loading state
-            updateUI(); 
-
-            // Firebase Auth Listener
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    isAuthReady = true;
-                    showNotification('Authenticated successfully!', 'success');
-                    // Start Firestore listener after auth is ready
-                    const userBudgetDocRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${currentUserId}/budget/current`);
-                    onSnapshot(userBudgetDocRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            currentBudget = docSnap.data();
-                            // Ensure transactions array exists
-                            if (!currentBudget.transactions) {
-                                currentBudget.transactions = [];
-                            }
-                            recalculateCategorySpent(); // Always recalculate on data load
-                            showNotification('Budget loaded from cloud!', 'success');
-                        } else {
-                            // If no budget exists, create a default one
-                            setDoc(userBudgetDocRef, currentBudget)
-                                .then(() => showNotification('Default budget created in cloud!', 'success'))
-                                .catch(error => showNotification(`Error creating default budget: ${error.message}`, 'danger'));
-                        }
-                        updateUI(); // Update UI after data load/change
-                    }, (error) => {
-                        console.error("Error fetching budget:", error);
-                        showNotification(`Error syncing budget: ${error.message}`, 'danger');
-                    });
-                } else {
-                    currentUserId = null;
-                    isAuthReady = true; // Still ready, but user is not logged in
-                    showNotification('Not authenticated. Data will not be saved persistently.', 'warning');
-                    updateUI(); // Update UI even if not authenticated
+        document.getElementById('archiveMonthButton').addEventListener('click', async () => {
+            const confirmed = await showConfirmModal('Archive Month?', 'This will save a snapshot of the current budget and reset all spending for the new month. This cannot be undone.');
+            if (confirmed) {
+                const now = new Date();
+                const archiveId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
+                try {
+                    await setDoc(archiveDocRef, currentBudget);
+                    currentBudget.transactions = [];
+                    currentBudget.categories.forEach(c => c.spent = 0);
+                    await saveBudget();
+                    showNotification(`Budget for ${archiveId} has been archived.`, 'success');
+                } catch (error) {
+                    console.error("Error archiving month:", error);
+                    showNotification("Archiving failed. Please try again.", "danger");
                 }
-            });
-
-            // Initial anonymous sign-in
-            signInAnonymously(auth).catch(error => {
-                console.error("Firebase Anonymous Auth error:", error);
-                showNotification(`Authentication failed: ${error.message}`, 'danger');
-            });
-
-
-            // Event Listeners
-            // The dismissNotification button is no longer needed as notifications auto-dismiss
-            // document.getElementById('dismissNotification').addEventListener('click', clearNotification);
+            }
+        });
+        
+        document.getElementById('viewMonthlyHistoryButton').addEventListener('click', async () => {
+            const historyList = document.getElementById('monthlyHistoryList');
+            historyList.innerHTML = '<div class="spinner"></div>';
+            showModal('monthlyHistoryModalOverlay');
             
-            // Open Add Transaction Modal (now via FAB)
-            const addExpenseFab = document.getElementById('addExpenseFab');
-            addExpenseFab.addEventListener('click', () => openTransactionModal());
-
-            // Handle Transaction Form Submission
-            document.getElementById('transactionForm').addEventListener('submit', (event) => {
-                event.preventDefault();
-                const amount = parseFloat(document.getElementById('modalTransactionAmount').value);
-                const categoryId = document.getElementById('modalTransactionCategory').value;
-                const description = document.getElementById('modalTransactionDescription').value;
-                const date = document.getElementById('modalTransactionDate').value;
-
-                if (!categoryId || isNaN(amount) || amount <= 0 || !date) {
-                    showNotification('Please fill all transaction fields correctly (Amount, Category, Date).', 'warning');
+            const archiveColRef = collection(db, `artifacts/${appId}/users/${userId}/archive`);
+            try {
+                const snapshot = await getDocs(archiveColRef);
+                historyList.innerHTML = '';
+                if (snapshot.empty) {
+                    historyList.innerHTML = '<p class="text-gray-500 text-center">No archives found.</p>';
                     return;
                 }
-
-                if (editingTransaction) {
-                    editTransaction(editingTransaction.id, categoryId, amount, description, date);
-                } else {
-                    addTransaction(categoryId, amount, description, date);
-                }
-                closeTransactionModal();
-                // If transaction history modal is open, re-render it
-                if (!document.getElementById('transactionHistoryModalOverlay').classList.contains('hidden')) {
-                    renderTransactions();
-                }
-            });
-            document.getElementById('cancelTransactionModal').addEventListener('click', closeTransactionModal);
-
-            // Voice input listener (now on the FAB)
-            const voiceFab = document.getElementById('voiceFab');
-            voiceFab.addEventListener('click', startVoiceInput);
-
-            // Transaction History Modal Listeners (New)
-            document.getElementById('viewTransactionsButton').addEventListener('click', openTransactionHistoryModal);
-            document.getElementById('closeTransactionHistoryModal').addEventListener('click', closeTransactionHistoryModal);
-
-            // Monthly History Listeners (New)
-            document.getElementById('viewMonthlyHistoryButton').addEventListener('click', openMonthlyHistoryModal);
-            document.getElementById('closeMonthlyHistoryModal').addEventListener('click', closeMonthlyHistoryModal);
-            document.getElementById('archiveMonthButton').addEventListener('click', () => archiveCurrentMonth());
-
-
-            // Archived Month Details Listeners (New)
-            document.getElementById('closeArchivedMonthDetailsModal').addEventListener('click', closeArchivedMonthDetailsModal);
-
-
-            // Category Management Listeners
-            document.getElementById('addCategoryModalButton').addEventListener('click', () => openCategoryModal());
-            document.getElementById('cancelCategoryModal').addEventListener('click', closeCategoryModal);
-            document.getElementById('categoryForm').addEventListener('submit', (event) => {
-                event.preventDefault();
-                const name = document.getElementById('modalCategoryName').value;
-                const allocated = parseFloat(document.getElementById('modalAllocatedAmount').value);
-                const type = document.getElementById('modalCategoryType').value;
-
-                if (name && !isNaN(allocated) && allocated >= 0) {
-                    const newCategoryData = {
-                        id: editingCategory ? editingCategory.id : Date.now().toString(),
-                        name: name,
-                        allocated: allocated,
-                        spent: editingCategory ? editingCategory.spent : 0,
-                        type: type
-                    };
-                    handleSaveCategory(newCategoryData);
-                } else {
-                    showNotification('Please fill all category fields correctly.', 'warning');
-                }
-            });
+                snapshot.docs
+                    .sort((a, b) => b.id.localeCompare(a.id))
+                    .forEach(doc => {
+                        const monthItem = document.createElement('div');
+                        monthItem.className = 'bg-gray-100 p-3 rounded-lg flex justify-between items-center';
+                        monthItem.innerHTML = `
+                            <span class="font-semibold">${doc.id}</span>
+                            <button data-archive-id="${doc.id}" class="view-archive-btn btn btn-indigo btn-sm py-1 px-3">View</button>
+                        `;
+                        historyList.appendChild(monthItem);
+                    });
+            } catch (error) {
+                console.error("Error fetching archives:", error);
+                historyList.innerHTML = '<p class="text-red-500 text-center">Could not load history.</p>';
+            }
         });
+
+        document.getElementById('addCategoryModalButton').addEventListener('click', () => {
+            editingCategoryId = null;
+            document.getElementById('categoryModalTitle').textContent = 'Add New Category';
+            document.getElementById('submitCategoryButton').textContent = 'Add Category';
+            document.getElementById('categoryForm').reset();
+            showModal('categoryModalOverlay');
+        });
+
+        document.getElementById('addExpenseFab').addEventListener('click', () => openTransactionModal());
+        document.querySelectorAll('[id^="cancel"], [id^="close"]').forEach(btn => {
+            btn.addEventListener('click', () => hideModal(btn.closest('.custom-modal-overlay').id));
+        });
+
     </script>
 </body>
 </html>
