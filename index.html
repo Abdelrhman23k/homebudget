@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/1.4.0/chartjs-plugin-annotation.min.js"></script>
     <style>
         /* Custom styles for the app */
         body {
@@ -240,8 +242,9 @@
                             <select id="forecastSelect" class="form-input"></select>
                         </div>
                         <div id="forecastResult" class="hidden text-center space-y-4 pt-4 border-t border-gray-200">
+                           <div id="forecastWarning" class="hidden p-3 text-sm text-red-700 bg-red-100 rounded-lg"></div>
                            <div class="relative h-64"><canvas id="forecastChartCanvas"></canvas></div>
-                           <div id="forecastMetrics" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+                           <div id="forecastMetrics" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
                         </div>
                     </div>
                 </div>
@@ -849,6 +852,7 @@
 
             if (!currentBudget || !currentBudget.transactions || currentBudget.transactions.length === 0) {
                 listEl.innerHTML = '<p class="text-gray-500 text-center">No transactions recorded yet.</p>';
+                renderTransactionPieChart([]);
                 return;
             }
 
@@ -965,9 +969,9 @@
         function renderArchivedMonthDetails(archiveId, data) {
             const modal = document.getElementById('archivedMonthDetailsModalOverlay');
             modal.innerHTML = `
-                 <div class="custom-modal-content">
+                 <div class="custom-modal-content" style="max-width: 800px;">
                     <h2 class="custom-modal-title">Details for ${archiveId}</h2>
-                    <div id="archivedMonthContent" class="max-h-[60vh] overflow-y-auto pr-2"></div>
+                    <div id="archivedMonthContent" class="max-h-[70vh] overflow-y-auto pr-2"></div>
                     <div class="custom-modal-buttons justify-center">
                         <button type="button" class="custom-modal-button custom-modal-cancel">Close</button>
                     </div>
@@ -984,26 +988,33 @@
                         <div><p class="text-sm text-gray-600">Total Spent</p><p class="font-bold text-lg text-red-600">${totalSpent.toFixed(2)} EGP</p></div>
                     </div>
                 </div>
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Categories</h3>
-                <div class="grid grid-cols-1 gap-4">${data.categories.map(cat => `
-                    <div class="category-card" style="border-color: ${cat.color || '#ccc'}">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-2">${cat.icon || defaultCategoryIcon}<span class="font-bold">${cat.name}</span></div>
-                            <span class="text-sm font-semibold">${cat.spent.toFixed(2)} / ${cat.allocated.toFixed(2)}</span>
-                        </div>
-                    </div>`).join('')}
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xl font-semibold">Spending Breakdown</h3>
+                        <select id="archivePieChartGroup" class="form-input w-auto">
+                            <option value="category">By Category</option>
+                            <option value="type">By Type</option>
+                            <option value="subcategory">By Subcategory</option>
+                        </select>
+                    </div>
+                    <div class="relative h-80"><canvas id="archivePieChart"></canvas></div>
                 </div>
-                ${(data.transactions && data.transactions.length > 0) ? `
-                <div class="mt-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">Transactions</h3>
-                    <ul class="space-y-2">${data.transactions.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
-                        const categoryName = data.categories.find(c => c.id === t.categoryId)?.name || 'Unknown';
-                        return `<li class="flex justify-between items-center bg-gray-50 p-2 rounded-md">
-                            <div><p class="font-medium">${t.description || 'Expense'} ${t.subcategory ? `<span class="text-xs text-gray-500">(${t.subcategory})</span>` : ''}</p><p class="text-sm text-gray-500">${categoryName} - ${formatTimestamp(t.date)} - ${t.paymentMethod || ''}</p></div>
-                            <span class="font-bold">${t.amount.toFixed(2)} EGP</span></li>`;
-                    }).join('')}</ul>
-                </div>` : ''}
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Transactions</h3>
+                <ul class="space-y-2">${data.transactions.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
+                    const categoryName = data.categories.find(c => c.id === t.categoryId)?.name || 'Unknown';
+                    return `<li class="flex justify-between items-center bg-gray-50 p-2 rounded-md">
+                        <div><p class="font-medium">${t.description || 'Expense'} ${t.subcategory ? `<span class="text-xs text-gray-500">(${t.subcategory})</span>` : ''}</p><p class="text-sm text-gray-500">${categoryName} - ${formatTimestamp(t.date)} - ${t.paymentMethod || ''}</p></div>
+                        <span class="font-bold">${t.amount.toFixed(2)} EGP</span></li>`;
+                }).join('') || '<p class="text-gray-500 text-center">No transactions for this month.</p>'}</ul>
             `;
+            
+            const renderPie = () => renderPieChart(
+                'archivePieChart', 
+                data.transactions, 
+                document.getElementById('archivePieChartGroup').value
+            );
+            renderPie();
+            document.getElementById('archivePieChartGroup').onchange = renderPie;
             modal.querySelector('.custom-modal-cancel').onclick = () => hideModal('archivedMonthDetailsModalOverlay');
         }
 
@@ -1223,6 +1234,7 @@
             const resultDiv = document.getElementById('forecastResult');
             const metricsDiv = document.getElementById('forecastMetrics');
             const canvas = document.getElementById('forecastChartCanvas');
+            const warningDiv = document.getElementById('forecastWarning');
             
             resultDiv.classList.remove('hidden');
 
@@ -1296,6 +1308,25 @@
                 </div>
             `;
             
+            // Overspending Warning
+            const projectedEndAmount = projectionData[daysInMonth - 1];
+            if (projectedEndAmount > allocatedAmount) {
+                let overspendDay = dayOfMonth;
+                let cumulativeProjected = cumulativeSpending[dayOfMonth - 2] || 0;
+                for (let i = dayOfMonth - 1; i < daysInMonth; i++) {
+                    cumulativeProjected += averageDailySpending;
+                    if (cumulativeProjected > allocatedAmount) {
+                        overspendDay = i + 1;
+                        break;
+                    }
+                }
+                const overspendFullDate = new Date(now.getFullYear(), now.getMonth(), overspendDay);
+                warningDiv.textContent = `You risk overspending on ${overspendFullDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}!`;
+                warningDiv.classList.remove('hidden');
+            } else {
+                warningDiv.classList.add('hidden');
+            }
+            
             if (forecastChart) forecastChart.destroy();
             forecastChart = new Chart(canvas.getContext('2d'), {
                 type: 'line',
@@ -1304,24 +1335,43 @@
                     datasets: [
                         {
                             label: 'Cumulative Spending', data: cumulativeSpending,
-                            borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)',
                             fill: true, tension: 0.2, pointRadius: 3
                         },
                         {
                             label: 'Projected Spending', data: projectionData,
-                            borderColor: '#8b5cf6', borderDash: [5, 5],
+                            borderColor: '#EF4444', borderDash: [5, 5],
                             fill: false, tension: 0.2, pointRadius: 0
                         },
                         {
                             label: 'Budget Limit', data: Array(daysInMonth).fill(allocatedAmount),
-                            borderColor: '#ef4444', fill: false, pointRadius: 0
+                            borderColor: '#6b7280', fill: false, pointRadius: 0, borderDash: [5, 5]
                         }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     scales: { y: { beginAtZero: true, ticks: { callback: value => `${value} EGP` } } },
-                    plugins: { legend: { position: 'top' }, title: { display: true, text: `Forecast for ${title}` } }
+                    plugins: { 
+                        legend: { position: 'top' }, 
+                        title: { display: true, text: `Forecast for ${title}` },
+                        annotation: {
+                            annotations: {
+                                todayLine: {
+                                    type: 'line',
+                                    xMin: dayOfMonth,
+                                    xMax: dayOfMonth,
+                                    borderColor: 'rgb(59, 130, 246)',
+                                    borderWidth: 2,
+                                    label: {
+                                        content: 'Today',
+                                        enabled: true,
+                                        position: 'start'
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }
