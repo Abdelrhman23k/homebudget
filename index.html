@@ -192,7 +192,7 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <div class="main-card">
+    <div class="app-container">
         <h1 class="text-2xl sm:text-3xl font-bold text-center text-indigo-700 mb-2">
             Monthly Budget Tracker
         </h1>
@@ -216,7 +216,7 @@
             <!-- Tab Panels -->
             <div id="tab-dashboard" class="tab-panel active">
                 <!-- Overall Summary -->
-                <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm mb-8">
+                <div class="content-card">
                     <div class="flex justify-between items-center text-lg mb-2">
                         <div>
                             <p class="text-sm text-gray-500">Total Budget</p>
@@ -234,7 +234,7 @@
                 </div>
 
                 <!-- Budget Forecasting Section -->
-                <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm mb-8">
+                <div class="content-card">
                     <h3 class="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Budget Forecast</h3>
                     <div class="space-y-4">
                         <div>
@@ -250,8 +250,8 @@
                 </div>
 
                 <!-- Management Section -->
-                <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
-                    <h2 class="text-lg sm:text-xl font-semibold text-gray-800">Manage</h2>
+                <div class="content-card">
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Manage</h2>
                     <div class="flex gap-2 flex-wrap">
                         <button id="manageSubcategoriesButton" class="btn bg-cyan-500 hover:bg-cyan-600">Subcategories</button>
                         <button id="managePaymentsButton" class="btn bg-teal-500 hover:bg-teal-600">Payments</button>
@@ -271,7 +271,7 @@
             <div id="tab-transactions" class="tab-panel">
                  <h2 class="text-2xl font-bold text-gray-800 mb-4">All Transactions</h2>
                  <!-- Filter Controls -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
+                <div class="content-card grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div>
                         <label for="filterCategory" class="block text-sm font-medium text-gray-700">Category</label>
                         <select id="filterCategory" class="form-input mt-1"></select>
@@ -293,7 +293,7 @@
                     </div>
                 </div>
                 <!-- Pie Chart for Transactions -->
-                <div class="mb-6">
+                <div class="content-card mb-6">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="text-xl font-semibold">Spending Breakdown</h3>
                         <select id="transactionPieChartGroup" class="form-input w-auto">
@@ -1239,7 +1239,9 @@
             resultDiv.classList.remove('hidden');
 
             const now = new Date();
-            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
             const dayOfMonth = now.getDate();
             const daysRemaining = daysInMonth > dayOfMonth ? daysInMonth - dayOfMonth : 1;
 
@@ -1270,52 +1272,44 @@
                 }
             }
             
-            const remainingAmount = allocatedAmount - spentAmount;
-            const recommendedDailySpending = daysRemaining > 0 ? remainingAmount / daysRemaining : 0;
+            const recommendedDailySpending = daysRemaining > 0 ? (allocatedAmount - spentAmount) / daysRemaining : 0;
             
             // Chart Data
-            const labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-            const cumulativeSpending = new Array(daysInMonth).fill(null);
+            const labels = Array.from({ length: daysInMonth }, (_, i) => new Date(currentYear, currentMonth, i + 1));
+            const cumulativeSpendingData = [];
             let dailyTotal = 0;
-            for(let i=0; i<dayOfMonth; i++) {
+            for(let i=0; i < dayOfMonth; i++) {
                 const dayTransactions = transactionsToConsider.filter(t => new Date(t.date).getDate() === (i + 1));
                 dailyTotal += dayTransactions.reduce((sum, t) => sum + t.amount, 0);
-                cumulativeSpending[i] = dailyTotal;
+                cumulativeSpendingData.push({ x: labels[i], y: dailyTotal });
             }
-            
-            const projectionData = [...cumulativeSpending];
+
             const averageDailySpending = dayOfMonth > 0 ? spentAmount / dayOfMonth : 0;
-            for(let i = dayOfMonth -1; i < daysInMonth; i++) {
-                if (i > 0) {
-                    projectionData[i] = projectionData[i-1] + averageDailySpending;
-                } else {
-                     projectionData[i] = averageDailySpending;
-                }
+            const forecastData = [...cumulativeSpendingData];
+            let lastSpentValue = cumulativeSpendingData.length > 0 ? cumulativeSpendingData[cumulativeSpendingData.length - 1].y : 0;
+
+            for(let i = dayOfMonth; i < daysInMonth; i++) {
+                lastSpentValue += averageDailySpending;
+                forecastData.push({ x: labels[i], y: lastSpentValue });
             }
             
             metricsDiv.innerHTML = `
                 <div class="bg-gray-100 p-3 rounded-lg">
-                    <p class="text-sm text-gray-600">Remaining</p>
-                    <p class="text-xl font-bold ${remainingAmount < 0 ? 'text-red-500' : 'text-green-600'}">${remainingAmount.toFixed(2)} EGP</p>
+                    <p class="text-sm text-gray-600">Daily Average</p>
+                    <p class="text-xl font-bold text-yellow-600">${averageDailySpending.toFixed(2)} EGP</p>
                 </div>
                 <div class="bg-gray-100 p-3 rounded-lg">
-                    <p class="text-sm text-gray-600">Recommended Daily Spend</p>
+                    <p class="text-sm text-gray-600">Daily Recommended</p>
                     <p class="text-xl font-bold text-blue-600">${recommendedDailySpending.toFixed(2)} EGP</p>
-                </div>
-                 <div class="bg-gray-100 p-3 rounded-lg">
-                    <p class="text-sm text-gray-600">Average Daily Spend</p>
-                    <p class="text-xl font-bold text-yellow-600">${averageDailySpending.toFixed(2)} EGP</p>
                 </div>
             `;
             
             // Overspending Warning
-            const projectedEndAmount = projectionData[daysInMonth - 1];
+            const projectedEndAmount = forecastData[daysInMonth - 1].y;
             if (projectedEndAmount > allocatedAmount) {
                 let overspendDay = dayOfMonth;
-                let cumulativeProjected = cumulativeSpending[dayOfMonth - 2] || 0;
                 for (let i = dayOfMonth - 1; i < daysInMonth; i++) {
-                    cumulativeProjected += averageDailySpending;
-                    if (cumulativeProjected > allocatedAmount) {
+                    if (forecastData[i].y > allocatedAmount) {
                         overspendDay = i + 1;
                         break;
                     }
@@ -1328,30 +1322,68 @@
             }
             
             if (forecastChart) forecastChart.destroy();
+            
+            const spentLineData = cumulativeSpendingData.map(d => ({x: d.x, y: d.y}));
+            if (spentLineData.length > 0) {
+                spentLineData.push({x: forecastData[dayOfMonth-1].x, y: forecastData[dayOfMonth-1].y});
+            }
+
             forecastChart = new Chart(canvas.getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels: labels,
                     datasets: [
                         {
-                            label: 'Cumulative Spending', data: cumulativeSpending,
-                            borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            fill: true, tension: 0.2, pointRadius: 3
+                            label: 'Spent',
+                            data: spentLineData,
+                            borderColor: '#10B981', // Green
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: 'start',
+                            tension: 0.2,
+                            pointRadius: 2,
                         },
                         {
-                            label: 'Projected Spending', data: projectionData,
-                            borderColor: '#EF4444', borderDash: [5, 5],
-                            fill: false, tension: 0.2, pointRadius: 0
-                        },
-                        {
-                            label: 'Budget Limit', data: Array(daysInMonth).fill(allocatedAmount),
-                            borderColor: '#6b7280', fill: false, pointRadius: 0, borderDash: [5, 5]
+                            label: 'Forecast',
+                            data: forecastData.slice(dayOfMonth - 1),
+                            borderColor: '#EF4444', // Red
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.2,
+                            pointRadius: 0
                         }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, ticks: { callback: value => `${value} EGP` } } },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                displayFormats: {
+                                    day: 'd MMM'
+                                }
+                            },
+                            ticks: {
+                                stepSize: 10
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: allocatedAmount * 1.2,
+                            ticks: {
+                                maxTicksLimit: 3,
+                                callback: function(value) {
+                                    if (value >= 1000) {
+                                        return value / 1000 + 'K';
+                                    }
+                                    return value;
+                                }
+                            }
+                        }
+                    },
                     plugins: { 
                         legend: { position: 'top' }, 
                         title: { display: true, text: `Forecast for ${title}` },
@@ -1359,14 +1391,27 @@
                             annotations: {
                                 todayLine: {
                                     type: 'line',
-                                    xMin: dayOfMonth,
-                                    xMax: dayOfMonth,
+                                    scaleID: 'x',
+                                    value: now.getTime(),
                                     borderColor: 'rgb(59, 130, 246)',
                                     borderWidth: 2,
                                     label: {
                                         content: 'Today',
                                         enabled: true,
                                         position: 'start'
+                                    }
+                                },
+                                limitLine: {
+                                    type: 'line',
+                                    scaleID: 'y',
+                                    value: allocatedAmount,
+                                    borderColor: '#6b7280',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        content: 'Limit',
+                                        enabled: true,
+                                        position: 'end'
                                     }
                                 }
                             }
