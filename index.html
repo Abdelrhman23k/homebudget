@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,6 +60,19 @@
             .custom-modal-title { font-size: 1.5rem; }
             .custom-modal-content { padding: 2rem; }
         }
+        .custom-modal-buttons { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+        .custom-modal-button {
+            padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; color: #ffffff;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: none; cursor: pointer;
+        }
+        .custom-modal-button:hover { transform: translateY(-2px); }
+        .custom-modal-confirm { background-color: #dc2626; }
+        .custom-modal-confirm:hover { background-color: #b91c1c; }
+        .custom-modal-cancel { background-color: #6b7280; }
+        .custom-modal-cancel:hover { background-color: #4b5563; }
+        .custom-modal-primary-button { background-color: #4338ca; }
+        .custom-modal-primary-button:hover { background-color: #3730a3; }
 
         /* Floating Action Button (FAB) styles */
         .fab-base {
@@ -218,10 +231,30 @@
                     <p class="text-right font-semibold mt-1">Remaining: <span id="overallRemainingValue" class="text-green-600">0.00</span> EGP</p>
                 </div>
 
-                <!-- Category Management Section -->
-                <div class="mb-8 flex justify-between items-center">
-                    <h2 class="text-lg sm:text-xl font-semibold text-gray-800">Manage Categories</h2>
-                    <button id="addCategoryModalButton" class="btn btn-purple">Add New</button>
+                <!-- Budget Forecasting Section -->
+                <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm mb-8">
+                    <h3 class="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Budget Forecast</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="forecastSelect" class="block text-sm font-medium text-gray-700 mb-1">Forecast for:</label>
+                            <select id="forecastSelect" class="form-input"></select>
+                        </div>
+                        <div id="forecastResult" class="hidden text-center space-y-4 pt-4 border-t border-gray-200">
+                           <div class="relative h-64"><canvas id="forecastChartCanvas"></canvas></div>
+                           <div id="forecastMetrics" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Management Section -->
+                <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-800">Manage</h2>
+                    <div class="flex gap-2 flex-wrap">
+                        <button id="manageSubcategoriesButton" class="btn bg-cyan-500 hover:bg-cyan-600">Subcategories</button>
+                        <button id="managePaymentsButton" class="btn bg-teal-500 hover:bg-teal-600">Payments</button>
+                        <button id="manageTypesButton" class="btn bg-gray-500 hover:bg-gray-600">Types</button>
+                        <button id="addCategoryModalButton" class="btn btn-purple">Add Category</button>
+                    </div>
                 </div>
 
                 <!-- Category Details -->
@@ -234,6 +267,42 @@
 
             <div id="tab-transactions" class="tab-panel">
                  <h2 class="text-2xl font-bold text-gray-800 mb-4">All Transactions</h2>
+                 <!-- Filter Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
+                    <div>
+                        <label for="filterCategory" class="block text-sm font-medium text-gray-700">Category</label>
+                        <select id="filterCategory" class="form-input mt-1"></select>
+                    </div>
+                    <div>
+                        <label for="filterPaymentMethod" class="block text-sm font-medium text-gray-700">Payment Method</label>
+                        <select id="filterPaymentMethod" class="form-input mt-1"></select>
+                    </div>
+                    <div>
+                        <label for="filterStartDate" class="block text-sm font-medium text-gray-700">Start Date</label>
+                        <input type="date" id="filterStartDate" class="form-input mt-1">
+                    </div>
+                    <div>
+                        <label for="filterEndDate" class="block text-sm font-medium text-gray-700">End Date</label>
+                        <input type="date" id="filterEndDate" class="form-input mt-1">
+                    </div>
+                    <div class="lg:col-span-4 flex justify-end">
+                        <button id="clearFiltersButton" class="btn bg-gray-600 hover:bg-gray-700 w-full sm:w-auto">Clear Filters</button>
+                    </div>
+                </div>
+                <!-- Pie Chart for Transactions -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xl font-semibold">Spending Breakdown</h3>
+                        <select id="transactionPieChartGroup" class="form-input w-auto">
+                            <option value="category">By Category</option>
+                            <option value="type">By Type</option>
+                            <option value="subcategory">By Subcategory</option>
+                        </select>
+                    </div>
+                    <div class="relative h-80">
+                        <canvas id="transactionPieChart"></canvas>
+                    </div>
+                </div>
                  <div id="transactionList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
             </div>
 
@@ -260,11 +329,15 @@
     <!-- Inline Notification Area -->
     <div id="inlineNotification" class="hidden"></div>
 
-    <!-- Modals (for adding/editing, confirmation, and archived details) -->
+    <!-- Modals -->
     <div id="categoryModalOverlay" class="custom-modal-overlay hidden"></div>
     <div id="transactionModalOverlay" class="custom-modal-overlay hidden"></div>
     <div id="archivedMonthDetailsModalOverlay" class="custom-modal-overlay hidden"></div>
     <div id="confirmModalOverlay" class="custom-modal-overlay hidden"></div>
+    <div id="manageTypesModalOverlay" class="custom-modal-overlay hidden"></div>
+    <div id="managePaymentsModalOverlay" class="custom-modal-overlay hidden"></div>
+    <div id="manageSubcategoriesModalOverlay" class="custom-modal-overlay hidden"></div>
+
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -288,6 +361,8 @@
         let editingTransactionId = null;
         let recognition = null;
         let budgetChart = null;
+        let transactionPieChart = null;
+        let forecastChart = null;
 
         const dom = {
             loadingSpinner: document.getElementById('loadingSpinner'),
@@ -303,6 +378,13 @@
 
         const defaultBudget = {
             income: 27725,
+            types: ['Needs', 'Wants', 'Savings'],
+            paymentMethods: ['Cash', 'Credit Card', 'Bank Transfer'],
+            subcategories: {
+                'Coffee': ['diningOut', 'groceries'],
+                'Internet': ['utilities'],
+                'Pet Food': ['dogEssentials']
+            },
             categories: [
                 { id: 'groceries', name: 'Groceries', allocated: 6000, spent: 0, type: 'Needs', color: '#EF4444', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.16"/></svg>` },
                 { id: 'utilities', name: 'Utilities', allocated: 1500, spent: 0, type: 'Needs', color: '#F97316', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m13 10-3 5h4l-3 5"/></svg>` },
@@ -358,14 +440,14 @@
                     <h2 class="custom-modal-title">${title}</h2>
                     <p class="text-center text-gray-600 mb-6">${message}</p>
                     <div class="custom-modal-buttons justify-center">
-                        <button id="confirmModalCancel" class="custom-modal-button custom-modal-cancel">Cancel</button>
-                        <button id="confirmModalConfirm" class="custom-modal-button custom-modal-confirm">Confirm</button>
+                        <button class="custom-modal-button custom-modal-cancel">Cancel</button>
+                        <button class="custom-modal-button custom-modal-confirm">Confirm</button>
                     </div>
                 </div>`;
             showModal('confirmModalOverlay');
             return new Promise(resolve => {
-                document.getElementById('confirmModalConfirm').onclick = () => { hideModal('confirmModalOverlay'); resolve(true); };
-                document.getElementById('confirmModalCancel').onclick = () => { hideModal('confirmModalOverlay'); resolve(false); };
+                modal.querySelector('.custom-modal-confirm').onclick = () => { hideModal('confirmModalOverlay'); resolve(true); };
+                modal.querySelector('.custom-modal-cancel').onclick = () => { hideModal('confirmModalOverlay'); resolve(false); };
             });
         }
 
@@ -398,6 +480,9 @@
                 if (docSnap.exists()) {
                     currentBudget = docSnap.data();
                     if (!currentBudget.transactions) currentBudget.transactions = [];
+                    if (!currentBudget.types) currentBudget.types = defaultBudget.types;
+                    if (!currentBudget.paymentMethods) currentBudget.paymentMethods = defaultBudget.paymentMethods;
+                    if (!currentBudget.subcategories) currentBudget.subcategories = defaultBudget.subcategories;
                 } else {
                     currentBudget = JSON.parse(JSON.stringify(defaultBudget));
                     setDoc(budgetDocRef, currentBudget).catch(error => console.error("Error creating default budget:", error));
@@ -425,9 +510,11 @@
             if (!currentBudget) return;
             renderSummary();
             renderCategories();
+            populateTransactionFilters();
             renderTransactionList();
             renderHistoryList();
             renderBudgetChart();
+            populateForecastDropdown();
         }
 
         function renderSummary() {
@@ -448,7 +535,7 @@
         function renderCategories() {
             const container = document.getElementById('categoryDetailsContainer');
             container.innerHTML = '';
-            const types = ['Needs', 'Wants', 'Savings'];
+            const types = currentBudget.types || defaultBudget.types;
 
             types.forEach(type => {
                 const categoriesOfType = currentBudget.categories.filter(c => c.type === type);
@@ -501,7 +588,7 @@
                     </div>
                 </div>
                 <div class="w-full">
-                    <p class="text-sm text-gray-500 text-left">
+                    <p class="text-sm text-gray-500">
                         <span class="font-semibold text-gray-700">${spent.toFixed(2)}</span> / ${allocated.toFixed(2)} EGP
                     </p>
                     <div class="progress-bar-container mt-1">
@@ -564,6 +651,13 @@
         function openCategoryModal(category = null) {
             editingCategoryId = category ? category.id : null;
             const modal = document.getElementById('categoryModalOverlay');
+            
+            let typeOptions = '';
+            currentBudget.types.forEach(type => {
+                const selected = category && category.type === type ? 'selected' : '';
+                typeOptions += `<option value="${type}" ${selected}>${type}</option>`;
+            });
+
             modal.innerHTML = `
                 <div class="custom-modal-content">
                     <h2 class="custom-modal-title">${category ? 'Edit Category' : 'Add New Category'}</h2>
@@ -578,11 +672,7 @@
                         </div>
                         <div class="mb-6">
                             <label for="modalCategoryType" class="block text-gray-700 text-sm font-bold mb-2">Category Type:</label>
-                            <select id="modalCategoryType" class="form-input">
-                                <option value="Needs" ${category && category.type === 'Needs' ? 'selected' : ''}>Needs</option>
-                                <option value="Wants" ${category && category.type === 'Wants' ? 'selected' : ''}>Wants</option>
-                                <option value="Savings" ${category && category.type === 'Savings' ? 'selected' : ''}>Savings</option>
-                            </select>
+                            <select id="modalCategoryType" class="form-input">${typeOptions}</select>
                         </div>
                         <div class="custom-modal-buttons">
                             <button type="button" class="custom-modal-button custom-modal-cancel">Cancel</button>
@@ -620,12 +710,22 @@
             await saveBudget();
             hideModal('categoryModalOverlay');
             editingCategoryId = null;
-            showNotification(`Category ${editingCategoryId ? 'updated' : 'added'} successfully.`, 'success');
+            showNotification(`Category saved successfully.`, 'success');
         }
 
         function openTransactionModal(transaction = null) {
             editingTransactionId = transaction ? transaction.id : null;
             const modal = document.getElementById('transactionModalOverlay');
+            
+            let paymentMethodOptions = '';
+            currentBudget.paymentMethods.forEach(pm => {
+                const selected = transaction && transaction.paymentMethod === pm ? 'selected' : '';
+                paymentMethodOptions += `<option value="${pm}" ${selected}>${pm}</option>`;
+            });
+            
+            let subcategoryOptions = '<option value="">None</option>';
+            // Subcategories are now dynamically populated based on selected category
+            
             modal.innerHTML = `
                  <div class="custom-modal-content">
                     <h2 class="custom-modal-title">${transaction ? 'Edit Expense' : 'Add New Expense'}</h2>
@@ -639,12 +739,20 @@
                             <select id="modalTransactionCategory" class="form-input" required></select>
                         </div>
                         <div class="mb-4">
+                            <label for="modalTransactionSubcategory" class="block text-gray-700 text-sm font-bold mb-2">Subcategory (Optional):</label>
+                            <select id="modalTransactionSubcategory" class="form-input">${subcategoryOptions}</select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="modalTransactionPaymentMethod" class="block text-gray-700 text-sm font-bold mb-2">Payment Method:</label>
+                            <select id="modalTransactionPaymentMethod" class="form-input" required>${paymentMethodOptions}</select>
+                        </div>
+                        <div class="mb-4">
                             <label for="modalTransactionDescription" class="block text-gray-700 text-sm font-bold mb-2">Description (Optional):</label>
                             <input type="text" id="modalTransactionDescription" class="form-input" value="${transaction ? transaction.description : ''}" />
                         </div>
                         <div class="mb-6">
-                            <label for="modalTransactionDate" class="block text-gray-700 text-sm font-bold mb-2">Date:</label>
-                            <input type="date" id="modalTransactionDate" class="form-input" value="${transaction ? transaction.date : new Date().toISOString().split('T')[0]}" required />
+                            <label for="modalTransactionDate" class="block text-gray-700 text-sm font-bold mb-2">Date & Time:</label>
+                            <input type="datetime-local" id="modalTransactionDate" class="form-input" value="${transaction ? transaction.date : new Date().toISOString().slice(0, 16)}" required />
                         </div>
                         <div class="custom-modal-buttons">
                             <button type="button" class="custom-modal-button custom-modal-cancel">Cancel</button>
@@ -654,10 +762,32 @@
                 </div>
             `;
             updateTransactionCategoryDropdown();
-            if(transaction) document.getElementById('modalTransactionCategory').value = transaction.categoryId;
+            if(transaction) {
+                document.getElementById('modalTransactionCategory').value = transaction.categoryId;
+                updateSubcategoryDropdown(transaction.categoryId, transaction.subcategory);
+            }
             showModal('transactionModalOverlay');
             modal.querySelector('form').onsubmit = handleTransactionFormSubmit;
             modal.querySelector('.custom-modal-cancel').onclick = () => hideModal('transactionModalOverlay');
+            document.getElementById('modalTransactionCategory').onchange = (e) => updateSubcategoryDropdown(e.target.value);
+        }
+        
+        function updateSubcategoryDropdown(categoryId, selectedSubcategory) {
+            const subcategorySelect = document.getElementById('modalTransactionSubcategory');
+            subcategorySelect.innerHTML = '<option value="">None</option>';
+            if (categoryId) {
+                for(const sub in currentBudget.subcategories) {
+                    if (currentBudget.subcategories[sub].includes(categoryId)) {
+                        const option = document.createElement('option');
+                        option.value = sub;
+                        option.textContent = sub;
+                        if (sub === selectedSubcategory) {
+                            option.selected = true;
+                        }
+                        subcategorySelect.appendChild(option);
+                    }
+                }
+            }
         }
 
         async function handleTransactionFormSubmit(e) {
@@ -666,6 +796,8 @@
                 id: editingTransactionId || `trans-${Date.now()}`,
                 amount: parseFloat(document.getElementById('modalTransactionAmount').value),
                 categoryId: document.getElementById('modalTransactionCategory').value,
+                subcategory: document.getElementById('modalTransactionSubcategory').value,
+                paymentMethod: document.getElementById('modalTransactionPaymentMethod').value,
                 description: document.getElementById('modalTransactionDescription').value,
                 date: document.getElementById('modalTransactionDate').value,
             };
@@ -691,47 +823,104 @@
                 if (category) category.spent += trans.amount;
             });
         }
+        
+        function formatTimestamp(isoString) {
+            const date = new Date(isoString);
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
+            return date.toLocaleString('en-US', options);
+        }
 
         function renderTransactionList() {
             const listEl = document.getElementById('transactionList');
-            if (!listEl) return;
+            const filterCategory = document.getElementById('filterCategory');
+            const filterPaymentMethod = document.getElementById('filterPaymentMethod');
+            const filterStartDate = document.getElementById('filterStartDate');
+            const filterEndDate = document.getElementById('filterEndDate');
+
+            if (!listEl || !filterCategory || !filterPaymentMethod || !filterStartDate || !filterEndDate) return;
+
+            const selectedCategory = filterCategory.value;
+            const selectedPaymentMethod = filterPaymentMethod.value;
+            const startDate = filterStartDate.value ? new Date(filterStartDate.value) : null;
+            const endDate = filterEndDate.value ? new Date(filterEndDate.value) : null;
+            if(endDate) endDate.setHours(23, 59, 59, 999); // Include the whole end day
+
             listEl.innerHTML = '';
-            
+
             if (!currentBudget || !currentBudget.transactions || currentBudget.transactions.length === 0) {
                 listEl.innerHTML = '<p class="text-gray-500 text-center">No transactions recorded yet.</p>';
                 return;
-            } 
-            
-            const grouped = currentBudget.transactions.reduce((acc, t) => {
-                (acc[t.categoryId] = acc[t.categoryId] || []).push(t);
-                return acc;
-            }, {});
+            }
 
-            for (const categoryId in grouped) {
-                const category = currentBudget.categories.find(c => c.id === categoryId);
-                if (category) {
-                    const section = document.createElement('div');
-                    section.innerHTML = `<h3 class="font-semibold text-lg" style="color: ${category.color};">${category.name}</h3>`;
-                    const ul = document.createElement('ul');
-                    ul.className = 'space-y-2 pl-4';
-                    grouped[categoryId]
-                        .sort((a, b) => new Date(b.date) - new Date(a.date))
-                        .forEach(t => {
-                            const li = document.createElement('li');
-                            li.className = 'flex justify-between items-center bg-white p-2 rounded-md shadow-sm';
-                            li.innerHTML = `
-                                <div>
-                                    <p class="font-medium">${t.description || 'Expense'}</p>
-                                    <p class="text-sm text-gray-500">${new Date(t.date).toLocaleDateString()}</p>
-                                </div>
-                                <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
-                            `;
-                            ul.appendChild(li);
-                        });
-                    section.appendChild(ul);
-                    listEl.appendChild(section);
+            const filteredTransactions = currentBudget.transactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                const categoryMatch = selectedCategory === 'all' || t.categoryId === selectedCategory;
+                const paymentMethodMatch = selectedPaymentMethod === 'all' || t.paymentMethod === selectedPaymentMethod;
+                const startDateMatch = !startDate || transactionDate >= startDate;
+                const endDateMatch = !endDate || transactionDate <= endDate;
+                return categoryMatch && paymentMethodMatch && startDateMatch && endDateMatch;
+            });
+
+            if (filteredTransactions.length === 0) {
+                listEl.innerHTML = '<p class="text-gray-500 text-center">No transactions match the current filters.</p>';
+            } else {
+                const grouped = filteredTransactions.reduce((acc, t) => {
+                    (acc[t.categoryId] = acc[t.categoryId] || []).push(t);
+                    return acc;
+                }, {});
+
+                for (const categoryId in grouped) {
+                    const category = currentBudget.categories.find(c => c.id === categoryId);
+                    if (category) {
+                        const section = document.createElement('div');
+                        section.innerHTML = `<h3 class="font-semibold text-lg" style="color: ${category.color};">${category.name}</h3>`;
+                        const ul = document.createElement('ul');
+                        ul.className = 'space-y-2 pl-4';
+                        grouped[categoryId]
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))
+                            .forEach(t => {
+                                const li = document.createElement('li');
+                                li.className = 'flex justify-between items-center bg-white p-2 rounded-md shadow-sm';
+                                li.innerHTML = `
+                                    <div>
+                                        <p class="font-medium">${t.description || 'Expense'} ${t.subcategory ? `<span class="text-xs text-gray-500">(${t.subcategory})</span>` : ''}</p>
+                                        <p class="text-sm text-gray-500">${formatTimestamp(t.date)} - ${t.paymentMethod || ''}</p>
+                                    </div>
+                                    <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
+                                `;
+                                ul.appendChild(li);
+                            });
+                        section.appendChild(ul);
+                        listEl.appendChild(section);
+                    }
                 }
             }
+            renderTransactionPieChart(filteredTransactions);
+        }
+        
+        function populateTransactionFilters() {
+            const filterCategory = document.getElementById('filterCategory');
+            const filterPaymentMethod = document.getElementById('filterPaymentMethod');
+
+            if (!filterCategory || !filterPaymentMethod) return;
+
+            // Populate Category Filter
+            filterCategory.innerHTML = '<option value="all">All Categories</option>';
+            currentBudget.categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                filterCategory.appendChild(option);
+            });
+
+            // Populate Payment Method Filter
+            filterPaymentMethod.innerHTML = '<option value="all">All Payment Methods</option>';
+            currentBudget.paymentMethods.forEach(pm => {
+                const option = document.createElement('option');
+                option.value = pm;
+                option.textContent = pm;
+                filterPaymentMethod.appendChild(option);
+            });
         }
 
         async function renderHistoryList() {
@@ -810,7 +999,7 @@
                     <ul class="space-y-2">${data.transactions.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
                         const categoryName = data.categories.find(c => c.id === t.categoryId)?.name || 'Unknown';
                         return `<li class="flex justify-between items-center bg-gray-50 p-2 rounded-md">
-                            <div><p class="font-medium">${t.description || 'Expense'}</p><p class="text-sm text-gray-500">${categoryName} - ${new Date(t.date).toLocaleDateString()}</p></div>
+                            <div><p class="font-medium">${t.description || 'Expense'} ${t.subcategory ? `<span class="text-xs text-gray-500">(${t.subcategory})</span>` : ''}</p><p class="text-sm text-gray-500">${categoryName} - ${formatTimestamp(t.date)} - ${t.paymentMethod || ''}</p></div>
                             <span class="font-bold">${t.amount.toFixed(2)} EGP</span></li>`;
                     }).join('')}</ul>
                 </div>` : ''}
@@ -870,7 +1059,8 @@
             const newTransaction = {
                 id: `trans-${Date.now()}`, amount, categoryId: foundCategoryId,
                 description: `Voice entry: "${transcript}"`,
-                date: new Date().toISOString().split('T')[0],
+                date: new Date().toISOString(),
+                paymentMethod: 'Cash' // Default for voice
             };
 
             currentBudget.transactions.push(newTransaction);
@@ -939,6 +1129,203 @@
             }
         }
 
+        function renderTransactionPieChart(transactions) {
+            const groupBy = document.getElementById('transactionPieChartGroup').value;
+            const canvas = document.getElementById('transactionPieChart');
+            if (!canvas) return;
+
+            if (transactionPieChart) {
+                transactionPieChart.destroy();
+            }
+
+            if (!transactions || transactions.length === 0) {
+                return;
+            }
+
+            const dataMap = new Map();
+
+            transactions.forEach(t => {
+                let key;
+                if (groupBy === 'category') {
+                    key = currentBudget.categories.find(c => c.id === t.categoryId)?.name || 'Unknown';
+                } else if (groupBy === 'type') {
+                    key = currentBudget.categories.find(c => c.id === t.categoryId)?.type || 'Unknown';
+                } else { // subcategory
+                    key = t.subcategory || 'Uncategorized';
+                }
+                dataMap.set(key, (dataMap.get(key) || 0) + t.amount);
+            });
+
+            const labels = [...dataMap.keys()];
+            const data = [...dataMap.values()];
+
+            transactionPieChart = new Chart(canvas.getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: labels.map(label => {
+                            const category = currentBudget.categories.find(c => c.name === label);
+                            return category ? category.color : `#${(Math.random()*0xFFFFFF<<0).toString(16).padStart(6,'0')}`;
+                        }),
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                    }
+                }
+            });
+        }
+        
+        function populateForecastDropdown() {
+            const select = document.getElementById('forecastSelect');
+            if (!select) return;
+            
+            const currentValue = select.value;
+
+            select.innerHTML = '<option value="overall">Overall Budget</option>';
+            
+            currentBudget.types.forEach(type => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = type;
+                
+                const typeOption = document.createElement('option');
+                typeOption.value = `type-${type}`;
+                typeOption.textContent = `${type} (Type)`;
+                optgroup.appendChild(typeOption);
+
+                currentBudget.categories.filter(c => c.type === type).forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = `category-${cat.id}`;
+                    option.textContent = `  ${cat.name}`;
+                    optgroup.appendChild(option);
+                });
+                select.appendChild(optgroup);
+            });
+
+            if (Array.from(select.options).some(opt => opt.value === currentValue)) {
+                select.value = currentValue;
+            } else {
+                select.value = 'overall';
+            }
+
+            calculateForecast();
+        }
+        
+        function calculateForecast() {
+            const selectedValue = document.getElementById('forecastSelect').value;
+            const resultDiv = document.getElementById('forecastResult');
+            const metricsDiv = document.getElementById('forecastMetrics');
+            const canvas = document.getElementById('forecastChartCanvas');
+            
+            resultDiv.classList.remove('hidden');
+
+            const now = new Date();
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const dayOfMonth = now.getDate();
+            const daysRemaining = daysInMonth > dayOfMonth ? daysInMonth - dayOfMonth : 1;
+
+            let allocatedAmount = 0;
+            let spentAmount = 0;
+            let title = "Overall Budget";
+            let transactionsToConsider = currentBudget.transactions;
+
+            if (selectedValue === 'overall') {
+                allocatedAmount = currentBudget.income;
+                spentAmount = currentBudget.categories.reduce((sum, cat) => sum + cat.spent, 0);
+            } else if (selectedValue.startsWith('type-')) {
+                const typeName = selectedValue.replace('type-', '');
+                const categoriesOfType = currentBudget.categories.filter(c => c.type === typeName);
+                const categoryIds = categoriesOfType.map(c => c.id);
+                allocatedAmount = categoriesOfType.reduce((sum, cat) => sum + cat.allocated, 0);
+                spentAmount = categoriesOfType.reduce((sum, cat) => sum + cat.spent, 0);
+                transactionsToConsider = currentBudget.transactions.filter(t => categoryIds.includes(t.categoryId));
+                title = typeName;
+            } else if (selectedValue.startsWith('category-')) {
+                const catId = selectedValue.replace('category-', '');
+                const category = currentBudget.categories.find(c => c.id === catId);
+                if (category) {
+                    allocatedAmount = category.allocated;
+                    spentAmount = category.spent;
+                    transactionsToConsider = currentBudget.transactions.filter(t => t.categoryId === catId);
+                    title = category.name;
+                }
+            }
+            
+            const remainingAmount = allocatedAmount - spentAmount;
+            const recommendedDailySpending = daysRemaining > 0 ? remainingAmount / daysRemaining : 0;
+            
+            // Chart Data
+            const labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+            const cumulativeSpending = new Array(daysInMonth).fill(null);
+            let dailyTotal = 0;
+            for(let i=0; i<dayOfMonth; i++) {
+                const dayTransactions = transactionsToConsider.filter(t => new Date(t.date).getDate() === (i + 1));
+                dailyTotal += dayTransactions.reduce((sum, t) => sum + t.amount, 0);
+                cumulativeSpending[i] = dailyTotal;
+            }
+            
+            const projectionData = [...cumulativeSpending];
+            const averageDailySpending = dayOfMonth > 0 ? spentAmount / dayOfMonth : 0;
+            for(let i = dayOfMonth -1; i < daysInMonth; i++) {
+                if (i > 0) {
+                    projectionData[i] = projectionData[i-1] + averageDailySpending;
+                } else {
+                     projectionData[i] = averageDailySpending;
+                }
+            }
+            
+            metricsDiv.innerHTML = `
+                <div class="bg-gray-100 p-3 rounded-lg">
+                    <p class="text-sm text-gray-600">Remaining</p>
+                    <p class="text-xl font-bold ${remainingAmount < 0 ? 'text-red-500' : 'text-green-600'}">${remainingAmount.toFixed(2)} EGP</p>
+                </div>
+                <div class="bg-gray-100 p-3 rounded-lg">
+                    <p class="text-sm text-gray-600">Recommended Daily Spend</p>
+                    <p class="text-xl font-bold text-blue-600">${recommendedDailySpending.toFixed(2)} EGP</p>
+                </div>
+                 <div class="bg-gray-100 p-3 rounded-lg">
+                    <p class="text-sm text-gray-600">Average Daily Spend</p>
+                    <p class="text-xl font-bold text-yellow-600">${averageDailySpending.toFixed(2)} EGP</p>
+                </div>
+            `;
+            
+            if (forecastChart) forecastChart.destroy();
+            forecastChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Cumulative Spending', data: cumulativeSpending,
+                            borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true, tension: 0.2, pointRadius: 3
+                        },
+                        {
+                            label: 'Projected Spending', data: projectionData,
+                            borderColor: '#8b5cf6', borderDash: [5, 5],
+                            fill: false, tension: 0.2, pointRadius: 0
+                        },
+                        {
+                            label: 'Budget Limit', data: Array(daysInMonth).fill(allocatedAmount),
+                            borderColor: '#ef4444', fill: false, pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { callback: value => `${value} EGP` } } },
+                    plugins: { legend: { position: 'top' }, title: { display: true, text: `Forecast for ${title}` } }
+                }
+            });
+        }
+
         // --- Tab Logic ---
         dom.tabs.forEach(button => {
             button.addEventListener('click', () => {
@@ -982,6 +1369,237 @@
             if (!recognition) return showNotification("Voice recognition is not initialized.", "danger");
             try { recognition.start(); } catch (e) { console.error("Could not start recognition:", e); }
         };
+        
+        document.getElementById('manageTypesButton').onclick = () => {
+            const modal = document.getElementById('manageTypesModalOverlay');
+            
+            const renderTypes = () => {
+                const typesList = currentBudget.types.map(type => `
+                    <li class="flex justify-between items-center bg-gray-100 p-2 rounded-md">
+                        <span>${type}</span>
+                        <button data-type-name="${type}" class="delete-type-btn p-1 text-gray-400 hover:text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </li>
+                `).join('');
+
+                modal.innerHTML = `
+                    <div class="custom-modal-content">
+                        <h2 class="custom-modal-title">Manage Category Types</h2>
+                        <ul id="typesList" class="space-y-2 mb-4">${typesList}</ul>
+                        <form id="addTypeForm" class="flex gap-2">
+                            <input type="text" id="newTypeName" class="form-input" placeholder="New Type Name" required />
+                            <button type="submit" class="btn btn-purple">Add Type</button>
+                        </form>
+                        <div class="custom-modal-buttons justify-center">
+                           <button type="button" class="custom-modal-button custom-modal-cancel">Close</button>
+                        </div>
+                    </div>`;
+                
+                modal.querySelector('#addTypeForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const newTypeNameInput = document.getElementById('newTypeName');
+                    const newTypeName = newTypeNameInput.value.trim();
+                    if (newTypeName && !currentBudget.types.includes(newTypeName)) {
+                        currentBudget.types.push(newTypeName);
+                        await saveBudget();
+                        renderTypes();
+                    }
+                    newTypeNameInput.value = '';
+                };
+                
+                modal.querySelectorAll('.delete-type-btn').forEach(btn => {
+                    btn.onclick = async (e) => {
+                        const typeName = e.currentTarget.dataset.typeName;
+                        const categoriesUsingType = currentBudget.categories.filter(c => c.type === typeName);
+                        const confirmed = await showConfirmModal(
+                            'Delete Type?',
+                            `Are you sure you want to delete the type "${typeName}"? This will also delete ${categoriesUsingType.length} associated categories and all their transactions.`
+                        );
+
+                        if (confirmed) {
+                            currentBudget.types = currentBudget.types.filter(t => t !== typeName);
+                            const categoryIdsToDelete = categoriesUsingType.map(c => c.id);
+                            currentBudget.categories = currentBudget.categories.filter(c => c.type !== typeName);
+                            currentBudget.transactions = currentBudget.transactions.filter(t => !categoryIdsToDelete.includes(t.categoryId));
+                            await saveBudget();
+                            renderTypes();
+                        }
+                    };
+                });
+                
+                modal.querySelector('.custom-modal-cancel').onclick = () => hideModal('manageTypesModalOverlay');
+            };
+
+            renderTypes();
+            showModal('manageTypesModalOverlay');
+        };
+        
+        document.getElementById('managePaymentsButton').onclick = () => {
+            const modal = document.getElementById('managePaymentsModalOverlay');
+            
+            const renderPaymentMethods = () => {
+                const paymentMethodsList = currentBudget.paymentMethods.map(pm => `
+                    <li class="flex justify-between items-center bg-gray-100 p-2 rounded-md">
+                        <span>${pm}</span>
+                        <button data-pm-name="${pm}" class="delete-pm-btn p-1 text-gray-400 hover:text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </li>
+                `).join('');
+
+                modal.innerHTML = `
+                    <div class="custom-modal-content">
+                        <h2 class="custom-modal-title">Manage Payment Methods</h2>
+                        <ul id="paymentMethodsList" class="space-y-2 mb-4">${paymentMethodsList}</ul>
+                        <form id="addPaymentMethodForm" class="flex gap-2">
+                            <input type="text" id="newPaymentMethodName" class="form-input" placeholder="New Payment Method" required />
+                            <button type="submit" class="btn btn-purple">Add Method</button>
+                        </form>
+                        <div class="custom-modal-buttons justify-center">
+                           <button type="button" class="custom-modal-button custom-modal-cancel">Close</button>
+                        </div>
+                    </div>`;
+                
+                modal.querySelector('#addPaymentMethodForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const newNameInput = document.getElementById('newPaymentMethodName');
+                    const newName = newNameInput.value.trim();
+                    if (newName && !currentBudget.paymentMethods.includes(newName)) {
+                        currentBudget.paymentMethods.push(newName);
+                        await saveBudget();
+                        renderPaymentMethods();
+                    }
+                    newNameInput.value = '';
+                };
+                
+                modal.querySelectorAll('.delete-pm-btn').forEach(btn => {
+                    btn.onclick = async (e) => {
+                        const pmName = e.currentTarget.dataset.pmName;
+                        const confirmed = await showConfirmModal(
+                            'Delete Payment Method?',
+                            `Are you sure you want to delete "${pmName}"? Transactions using this method will not be affected.`
+                        );
+
+                        if (confirmed) {
+                            currentBudget.paymentMethods = currentBudget.paymentMethods.filter(pm => pm !== pmName);
+                            await saveBudget();
+                            renderPaymentMethods();
+                        }
+                    };
+                });
+                
+                modal.querySelector('.custom-modal-cancel').onclick = () => hideModal('managePaymentsModalOverlay');
+            };
+
+            renderPaymentMethods();
+            showModal('managePaymentsModalOverlay');
+        };
+        
+        document.getElementById('manageSubcategoriesButton').onclick = () => {
+            const modal = document.getElementById('manageSubcategoriesModalOverlay');
+            
+            const renderSubcategories = () => {
+                const subcategoriesList = Object.keys(currentBudget.subcategories).map(sub => `
+                    <li class="bg-gray-100 p-3 rounded-md">
+                        <div class="flex justify-between items-center mb-2">
+                           <span class="font-semibold">${sub}</span>
+                           <button data-sub-name="${sub}" class="delete-sub-btn p-1 text-gray-400 hover:text-red-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                           </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            ${currentBudget.categories.map(cat => `
+                                <div>
+                                    <input type="checkbox" id="sub-${sub}-${cat.id}" data-sub-name="${sub}" data-cat-id="${cat.id}" class="mr-2" ${currentBudget.subcategories[sub].includes(cat.id) ? 'checked' : ''}>
+                                    <label for="sub-${sub}-${cat.id}">${cat.name}</label>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </li>
+                `).join('');
+
+                modal.innerHTML = `
+                    <div class="custom-modal-content">
+                        <h2 class="custom-modal-title">Manage Subcategories</h2>
+                        <ul id="subcategoriesList" class="space-y-4 mb-4 max-h-60 overflow-y-auto">${subcategoriesList}</ul>
+                        <form id="addSubcategoryForm" class="flex gap-2">
+                            <input type="text" id="newSubcategoryName" class="form-input" placeholder="New Subcategory Name" required />
+                            <button type="submit" class="btn btn-purple">Add</button>
+                        </form>
+                        <div class="custom-modal-buttons justify-center">
+                           <button type="button" class="custom-modal-button custom-modal-cancel">Close</button>
+                        </div>
+                    </div>`;
+                
+                modal.querySelector('#addSubcategoryForm').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const newNameInput = document.getElementById('newSubcategoryName');
+                    const newName = newNameInput.value.trim();
+                    if (newName && !currentBudget.subcategories[newName]) {
+                        currentBudget.subcategories[newName] = [];
+                        await saveBudget();
+                        renderSubcategories();
+                    }
+                    newNameInput.value = '';
+                };
+                
+                modal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.onchange = async (e) => {
+                        const subName = e.target.dataset.subName;
+                        const catId = e.target.dataset.catId;
+                        if (e.target.checked) {
+                            if (!currentBudget.subcategories[subName].includes(catId)) {
+                                currentBudget.subcategories[subName].push(catId);
+                            }
+                        } else {
+                            currentBudget.subcategories[subName] = currentBudget.subcategories[subName].filter(id => id !== catId);
+                        }
+                        await saveBudget();
+                    };
+                });
+                
+                modal.querySelectorAll('.delete-sub-btn').forEach(btn => {
+                    btn.onclick = async (e) => {
+                        const subName = e.currentTarget.dataset.subName;
+                        const confirmed = await showConfirmModal(
+                            'Delete Subcategory?',
+                            `Are you sure you want to delete "${subName}"? This will remove it from all transactions and categories.`
+                        );
+
+                        if (confirmed) {
+                            delete currentBudget.subcategories[subName];
+                            currentBudget.transactions.forEach(t => {
+                                if (t.subcategory === subName) {
+                                    t.subcategory = '';
+                                }
+                            });
+                            await saveBudget();
+                            renderSubcategories();
+                        }
+                    };
+                });
+                
+                modal.querySelector('.custom-modal-cancel').onclick = () => hideModal('manageSubcategoriesModalOverlay');
+            };
+
+            renderSubcategories();
+            showModal('manageSubcategoriesModalOverlay');
+        };
+        
+        document.getElementById('filterCategory').addEventListener('change', renderTransactionList);
+        document.getElementById('filterPaymentMethod').addEventListener('change', renderTransactionList);
+        document.getElementById('filterStartDate').addEventListener('change', renderTransactionList);
+        document.getElementById('filterEndDate').addEventListener('change', renderTransactionList);
+        document.getElementById('clearFiltersButton').addEventListener('click', () => {
+            document.getElementById('filterCategory').value = 'all';
+            document.getElementById('filterPaymentMethod').value = 'all';
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            renderTransactionList();
+        });
+        document.getElementById('transactionPieChartGroup').addEventListener('change', renderTransactionList);
+        document.getElementById('forecastSelect').onchange = calculateForecast;
 
     </script>
 </body>
