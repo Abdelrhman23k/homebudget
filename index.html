@@ -16,26 +16,28 @@
             font-family: "Inter", sans-serif;
             background-color: #f3f4f6; /* Tailwind gray-100 */
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 0.5rem; /* Reduced padding for smaller screens */
         }
-        .main-card {
+        .app-container {
             width: 100%;
-            max-width: 800px;
-            background-color: #ffffff;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            border-radius: 1rem;
-            padding: 1rem; /* Adjusted padding */
-            margin-top: 1rem;
-            margin-bottom: 8rem; /* Space for FABs */
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem;
         }
         @media (min-width: 640px) {
-            body { padding: 1rem; }
-            .main-card { padding: 2rem; margin-top: 2rem; }
+            .app-container { padding: 2rem; }
         }
+
+        .content-card {
+             background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+         @media (min-width: 640px) {
+            .content-card { padding: 2rem; }
+        }
+
 
         /* Custom Modal Styles */
         .custom-modal-overlay {
@@ -158,6 +160,12 @@
             flex-direction: column; gap: 0.5rem;
             box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
             border-left-width: 5px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         .category-icon { width: 20px; height: 20px; color: #4b5563; }
         .progress-bar-container {
@@ -574,6 +582,7 @@
 
             card.className = 'category-card';
             card.style.borderColor = category.color || '#cccccc';
+            card.dataset.categoryId = category.id;
             
             card.innerHTML = `
                 <div class="flex justify-between items-start w-full">
@@ -606,21 +615,23 @@
         }
 
         function attachCategoryEventListeners() {
-            document.querySelectorAll('.edit-category-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    editingCategoryId = e.currentTarget.dataset.editId;
+            document.getElementById('categoryDetailsContainer').addEventListener('click', (e) => {
+                const card = e.target.closest('.category-card');
+                if (!card) return;
+
+                if (e.target.closest('.edit-category-btn')) {
+                    editingCategoryId = card.dataset.categoryId;
                     const category = currentBudget.categories.find(c => c.id === editingCategoryId);
-                    if (category) {
-                        openCategoryModal(category);
-                    }
-                });
-            });
-            
-            document.querySelectorAll('.delete-category-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const categoryIdToDelete = e.currentTarget.dataset.deleteId;
+                    if (category) openCategoryModal(category);
+                } else if (e.target.closest('.delete-category-btn')) {
+                    const categoryIdToDelete = card.dataset.categoryId;
                     handleDeleteCategory(categoryIdToDelete);
-                });
+                } else {
+                    const categoryId = card.dataset.categoryId;
+                    document.querySelector('[data-tab="transactions"]').click();
+                    document.getElementById('filterCategory').value = categoryId;
+                    renderTransactionList();
+                }
             });
         }
 
@@ -886,11 +897,19 @@
                                 const li = document.createElement('li');
                                 li.className = 'flex justify-between items-center bg-white p-2 rounded-md shadow-sm';
                                 li.innerHTML = `
-                                    <div>
+                                    <div class="flex-1">
                                         <p class="font-medium">${t.description || 'Expense'} ${t.subcategory ? `<span class="text-xs text-gray-500">(${t.subcategory})</span>` : ''}</p>
                                         <p class="text-sm text-gray-500">${formatTimestamp(t.date)} - ${t.paymentMethod || ''}</p>
                                     </div>
-                                    <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
+                                        <button data-edit-id="${t.id}" class="edit-transaction-btn p-1 text-gray-400 hover:text-blue-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                        </button>
+                                        <button data-delete-id="${t.id}" class="delete-transaction-btn p-1 text-gray-400 hover:text-red-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                        </button>
+                                    </div>
                                 `;
                                 ul.appendChild(li);
                             });
