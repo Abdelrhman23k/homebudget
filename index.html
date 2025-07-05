@@ -22,9 +22,10 @@
             max-width: 900px;
             margin: 0 auto;
             padding: 1rem;
+            padding-bottom: 12rem; /* Added extra space for FABs */
         }
         @media (min-width: 640px) {
-            .app-container { padding: 2rem; }
+            .app-container { padding: 2rem; padding-bottom: 12rem; }
         }
 
         .content-card {
@@ -968,15 +969,6 @@
                             <span class="font-semibold">${doc.id}</span>
                             <button data-archive-id="${doc.id}" class="view-archive-btn btn bg-indigo-500 hover:bg-indigo-600 btn-sm py-1 px-3">View</button>
                         `;
-                        monthItem.querySelector('.view-archive-btn').onclick = async () => {
-                             const archiveId = doc.id;
-                             const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
-                             const docSnap = await getDoc(archiveDocRef);
-                             if (docSnap.exists()) {
-                                 renderArchivedMonthDetails(archiveId, docSnap.data());
-                                 showModal('archivedMonthDetailsModalOverlay');
-                             }
-                        };
                         historyList.appendChild(monthItem);
                     });
             } catch (error) {
@@ -1714,6 +1706,49 @@
         });
         document.getElementById('transactionPieChartGroup').addEventListener('change', renderTransactionList);
         document.getElementById('forecastSelect').onchange = calculateForecast;
+        document.getElementById('transactionList').addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-transaction-btn');
+            if (editBtn) {
+                const transactionId = editBtn.dataset.editId;
+                const transaction = currentBudget.transactions.find(t => t.id === transactionId);
+                if(transaction) openTransactionModal(transaction);
+            }
+            const deleteBtn = e.target.closest('.delete-transaction-btn');
+            if(deleteBtn) {
+                const transactionId = deleteBtn.dataset.deleteId;
+                handleDeleteTransaction(transactionId);
+            }
+        });
+        
+        document.getElementById('monthlyHistoryList').addEventListener('click', async (e) => {
+            const viewBtn = e.target.closest('.view-archive-btn');
+            if (viewBtn) {
+                const archiveId = viewBtn.dataset.archiveId;
+                const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
+                try {
+                    const docSnap = await getDoc(archiveDocRef);
+                    if (docSnap.exists()) {
+                        renderArchivedMonthDetails(archiveId, docSnap.data());
+                        showModal('archivedMonthDetailsModalOverlay');
+                    } else {
+                        showNotification("Could not find the selected archive.", "danger");
+                    }
+                } catch (error) {
+                    console.error("Error fetching archive details:", error);
+                    showNotification("Failed to load archive details.", "danger");
+                }
+            }
+        });
+
+        async function handleDeleteTransaction(transactionId) {
+            const confirmed = await showConfirmModal('Delete Transaction?', 'Are you sure you want to delete this transaction?');
+            if (confirmed) {
+                currentBudget.transactions = currentBudget.transactions.filter(t => t.id !== transactionId);
+                recalculateSpentAmounts();
+                await saveBudget();
+                showNotification('Transaction deleted.', 'success');
+            }
+        }
 
     </script>
 </body>
