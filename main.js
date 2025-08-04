@@ -1,0 +1,1455 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// --- Constants ---
+const CONSTANTS = {
+    MODAL_IDS: {
+        category: 'categoryModalOverlay',
+        transaction: 'transactionModalOverlay',
+        archivedDetails: 'archivedMonthDetailsModalOverlay',
+        confirm: 'confirmModalOverlay',
+        manageItems: 'manageItemsModalOverlay',
+        manageSubcategories: 'manageSubcategoriesModalOverlay'
+    }
+};
+
+// --- Firebase Configuration ---
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSyAnDwriW_zqBkZDrdLcDrg82f5_UoJzeUE", authDomain: "home-budget-app-c4f05.firebaseapp.com", projectId: "home-budget-app-c4f05" };
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+// --- Application State ---
+let currentBudget = null;
+let userId = null;
+let isAuthReady = false;
+let unsubscribeBudget = null;
+let editingCategoryId = null;
+let editingTransactionId = null;
+let recognition = null;
+let budgetChart = null;
+let transactionPieChart = null;
+let forecastChart = null;
+
+// --- DOM Element Cache ---
+const dom = {
+    loadingSpinner: document.getElementById('loadingSpinner'),
+    mainContent: document.getElementById('mainContent'),
+    userIdDisplay: document.getElementById('userIdDisplay'),
+    userIdValue: document.getElementById('userIdValue'),
+    voiceFab: document.getElementById('voiceFab'),
+    tabs: document.querySelectorAll('.tab-button'),
+    tabPanels: document.querySelectorAll('.tab-panel'),
+};
+
+// --- Default Data Structures ---
+const defaultCategoryIcon = `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.432 0l6.568-6.568a2.426 2.426 0 0 0 0-3.432L12.586 2.586z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>`;
+
+const defaultBudget = {
+    income: 27725,
+    types: ['Needs', 'Wants', 'Savings'],
+    paymentMethods: ['Cash', 'Credit Card', 'Bank Transfer'],
+    subcategories: {
+        'Coffee': ['diningOut', 'groceries'],
+        'Internet': ['utilities'],
+        'Pet Food': ['dogEssentials']
+    },
+    categories: [
+        { id: 'groceries', name: 'Groceries', allocated: 6000, spent: 0, type: 'Needs', color: '#EF4444', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.16"/></svg>` },
+        { id: 'utilities', name: 'Utilities', allocated: 1500, spent: 0, type: 'Needs', color: '#F97316', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m13 10-3 5h4l-3 5"/></svg>` },
+        { id: 'homeOwnership', name: 'Home Ownership', allocated: 1675, spent: 0, type: 'Needs', color: '#EAB308', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>` },
+        { id: 'fuel', name: 'Fuel for Car', allocated: 2000, spent: 0, type: 'Needs', color: '#22C55E', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg>` },
+        { id: 'healthcare', name: 'Healthcare', allocated: 700, spent: 0, type: 'Needs', color: '#14B8A6', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.7-1 2.1 4.2 3-10.5 1.7 5.3h1.7"/></svg>` },
+        { id: 'dogEssentials', name: 'Dog Essentials', allocated: 1200, spent: 0, type: 'Needs', color: '#06B6D4', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-7 0V15a5 5 0 0 1 5-5z"/><path d="M12 14v6"/><path d="M8 14v6"/><path d="M16 14v6"/></svg>` },
+        { id: 'cigarettes', name: 'Cigarettes', allocated: 4500, spent: 0, type: 'Wants', color: '#3B82F6', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Z"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>` },
+        { id: 'gifts', name: 'Gifts', allocated: 1000, spent: 0, type: 'Wants', color: '#6366F1', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>` },
+        { id: 'sweetTooth', name: 'Sweet Tooth', allocated: 500, spent: 0, type: 'Wants', color: '#8B5CF6', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2.4 2.4 0 0 0-2.4 2.4c0 1.6.8 2.4 1.6 3.2.7.7 1.2 1.2 1.2 2.2v1.2c0 .4-.2.8-.4 1-.2.3-.5.5-.8.6-.7.3-1.4.2-2.1-.2-1.1-.6-2.4-1.6-3.6-2.5C4.3 9.3 3.3 8.5 2.5 7.7.8 6.1 2 3.8 3.4 2.8 4.9 1.8 7 2.4 7.8 3c.8.7 1.5 1.8 2.2 2.8.3.4.7.8 1.1 1.2.2.2.4.3.6.4.2.1.4.1.6 0 .2-.1.4-.2.6-.4.4-.4.8-.8 1.1-1.2.8-1 1.5-2.1 2.2-2.8.8-.7 2.9-1.2 4.4-0.2s2.6 3.3 1.7 4.9c-.8.8-1.8 1.6-2.9 2.4-1.2.9-2.5 1.9-3.6 2.5-1.4.8-2.9.8-4.3.2-1.4-.6-2.5-1.8-2.7-3.3v-1.2c0-1-.4-1.5-1.2-2.2-.8-.8-1.6-1.6-1.6-3.2A2.4 2.4 0 0 0 12 2z"/><path d="M12 12.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>` },
+        { id: 'subscriptions', name: 'Subscriptions', allocated: 390, spent: 0, type: 'Wants', color: '#EC4899', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>` },
+        { id: 'diningOut', name: 'Dining Out', allocated: 1500, spent: 0, type: 'Wants', color: '#F43F5E', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>` },
+        { id: 'miscWants', name: 'Miscellaneous Wants', allocated: 2260, spent: 0, type: 'Wants', color: '#64748B', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>` },
+        { id: 'savings', name: 'Savings', allocated: 4000, spent: 0, type: 'Savings', color: '#A855F7', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M8 12h7"/><path d="M12 7v10"/></svg>` },
+    ],
+    transactions: []
+};
+
+const categoryMapping = {
+     "groceries": ["groceries", "grocery", "بقالة", "سوبر ماركت"],
+     "utilities": ["utilities", "bills", "فواتير", "كهرباء", "غاز"],
+     "homeOwnership": ["home", "rent", "ايجار", "صيانة"],
+     "fuel": ["fuel", "gas", "بنزين"],
+     "healthcare": ["health", "pharmacy", "doctor", "صيدلية", "دكتور"],
+     "dogEssentials": ["dog", "pet", "كلب"],
+     "cigarettes": ["cigarettes", "smoke", "سجائر"],
+     "gifts": ["gifts", "presents", "هدايا"],
+     "sweetTooth": ["sweets", "dessert", "حلويات"],
+     "subscriptions": ["subscriptions", "netflix", "spotify", "اشتراك"],
+     "diningOut": ["dining", "restaurant", "مطعم", "اكل بره"],
+     "miscWants": ["misc", "miscellaneous", "shopping", "entertainment", "متفرقات", "شوبينج"],
+     "savings": ["savings", "توفير", "ادخار"]
+};
+
+// --- Firebase Initialization ---
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// --- UI Helper Functions ---
+function showNotification(message, type = 'info', duration = 3000) {
+    const el = document.getElementById('inlineNotification');
+    el.textContent = message;
+    el.className = 'hidden';
+    void el.offsetWidth; // Trigger reflow to restart animation
+    el.classList.add(type, 'show');
+    setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.classList.add('hidden'), 300);
+    }, duration);
+}
+
+function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+async function showConfirmModal(title, message) {
+    const modalId = CONSTANTS.MODAL_IDS.confirm;
+    const modal = document.getElementById(modalId);
+    modal.innerHTML = `
+        <div class="custom-modal-content">
+            <h2 class="custom-modal-title">${title}</h2>
+            <p class="text-center text-gray-600 mb-6">${message}</p>
+            <div class="custom-modal-buttons justify-center">
+                <button class="custom-modal-button custom-modal-cancel">Cancel</button>
+                <button class="custom-modal-button custom-modal-confirm">Confirm</button>
+            </div>
+        </div>`;
+    showModal(modalId);
+    return new Promise(resolve => {
+        modal.querySelector('.custom-modal-confirm').onclick = () => { hideModal(modalId); resolve(true); };
+        modal.querySelector('.custom-modal-cancel').onclick = () => { hideModal(modalId); resolve(false); };
+    });
+}
+
+// --- Authentication ---
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        userId = user.uid;
+        isAuthReady = true;
+        dom.userIdValue.textContent = userId;
+        dom.userIdDisplay.classList.remove('hidden');
+        await setupBudgetListener();
+        setupSpeechRecognition();
+    } else {
+        try {
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+            } else {
+                await signInAnonymously(auth);
+            }
+        } catch (error) {
+            console.error("Authentication failed:", error);
+            showNotification("Critical Error: Could not connect to the service. Please refresh.", "danger", 10000);
+        }
+    }
+});
+
+// --- Data Synchronization ---
+async function setupBudgetListener() {
+    if (!isAuthReady || !userId) return;
+    if (unsubscribeBudget) unsubscribeBudget();
+    
+    const budgetDocRef = doc(db, `artifacts/${appId}/users/${userId}/budget/current`);
+    
+    unsubscribeBudget = onSnapshot(budgetDocRef, (docSnap) => {
+        try {
+            dom.loadingSpinner.classList.add('hidden');
+            dom.mainContent.classList.remove('hidden');
+            
+            if (docSnap.exists()) {
+                currentBudget = docSnap.data();
+                // Ensure default structures exist if budget is old
+                if (!currentBudget.transactions) currentBudget.transactions = [];
+                if (!currentBudget.types) currentBudget.types = defaultBudget.types;
+                if (!currentBudget.paymentMethods) currentBudget.paymentMethods = defaultBudget.paymentMethods;
+                if (!currentBudget.subcategories) currentBudget.subcategories = defaultBudget.subcategories;
+            } else {
+                currentBudget = JSON.parse(JSON.stringify(defaultBudget));
+                setDoc(budgetDocRef, currentBudget).catch(error => {
+                    console.error("Error creating default budget:", error);
+                    showNotification("Failed to create initial budget.", "danger");
+                });
+            }
+            renderUI();
+        } catch (error) {
+            console.error("Error processing budget update:", error);
+            showNotification("An error occurred while updating the UI. Please refresh.", "danger");
+        }
+    }, (error) => {
+        console.error("Error listening to budget changes:", error);
+        showNotification("Connection to data lost. Please check your internet and refresh.", "danger", 10000);
+        dom.loadingSpinner.classList.add('hidden');
+    });
+}
+
+async function saveBudget() {
+    if (!isAuthReady || !userId || !currentBudget) return;
+    const budgetDocRef = doc(db, `artifacts/${appId}/users/${userId}/budget/current`);
+    try {
+        await setDoc(budgetDocRef, currentBudget);
+    } catch (error) {
+        console.error("Error saving budget:", error);
+        showNotification("Error: Could not save changes to the cloud. Please check your connection.", "danger", 5000);
+    }
+}
+
+// --- Main UI Rendering Logic ---
+function renderUI() {
+    if (!currentBudget) return;
+    renderSummary();
+    renderCategories();
+    populateTransactionFilters();
+    renderTransactionList();
+    renderHistoryList();
+    renderBudgetChart();
+    populateForecastDropdown();
+}
+
+function renderSummary() {
+    const totalSpent = currentBudget.categories.reduce((sum, cat) => sum + (cat.spent || 0), 0);
+    const overallRemaining = currentBudget.income - totalSpent;
+    const spentPercentage = currentBudget.income > 0 ? (totalSpent / currentBudget.income) * 100 : 0;
+
+    document.getElementById('totalBudgetValue').textContent = currentBudget.income.toFixed(2);
+    document.getElementById('totalSpentValue').textContent = totalSpent.toFixed(2);
+    
+    const remainingEl = document.getElementById('overallRemainingValue');
+    remainingEl.textContent = overallRemaining.toFixed(2);
+    remainingEl.className = `font-bold ${overallRemaining < 0 ? 'text-red-600' : 'text-green-600'}`;
+    
+    document.getElementById('overallProgressBar').style.width = `${Math.min(100, spentPercentage)}%`;
+}
+
+function renderCategories() {
+    const container = document.getElementById('categoryDetailsContainer');
+    container.innerHTML = '';
+    const types = currentBudget.types || defaultBudget.types;
+
+    types.forEach(type => {
+        const categoriesOfType = currentBudget.categories.filter(c => c.type === type);
+        if (categoriesOfType.length === 0) return;
+
+        const section = document.createElement('div');
+        section.className = 'mb-6';
+        
+        const title = document.createElement('h3');
+        title.className = 'text-xl sm:text-2xl font-bold text-gray-800 mb-4 pl-1';
+        title.textContent = type;
+        section.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+        section.appendChild(grid);
+
+        categoriesOfType.forEach(category => {
+            grid.appendChild(createCategoryCard(category));
+        });
+        container.appendChild(section);
+    });
+    attachCategoryEventListeners();
+    updateTransactionCategoryDropdown();
+}
+
+function createCategoryCard(category) {
+    const card = document.createElement('div');
+    const spent = category.spent || 0;
+    const allocated = category.allocated || 0;
+    const remaining = allocated - spent;
+    const percentage = allocated > 0 ? (spent / allocated) * 100 : 0;
+
+    card.className = 'category-card';
+    card.style.borderColor = category.color || '#cccccc';
+    card.dataset.categoryId = category.id;
+    
+    card.innerHTML = `
+        <div class="flex justify-between items-start w-full">
+            <div class="flex items-center gap-2">
+                ${category.icon || defaultCategoryIcon}
+                <h4 class="font-bold text-base sm:text-lg text-gray-900">${category.name}</h4>
+            </div>
+            <div class="flex gap-2">
+                <button data-edit-id="${category.id}" class="edit-category-btn p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </button>
+                <button data-delete-id="${category.id}" class="delete-category-btn p-1 text-gray-400 hover:text-red-600 transition-colors">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="w-full">
+            <p class="text-sm text-gray-500">
+                <span class="font-semibold text-gray-700">${spent.toFixed(2)}</span> / ${allocated.toFixed(2)} EGP
+            </p>
+            <div class="progress-bar-container mt-1">
+                <div class="progress-bar-fill" style="width: ${Math.min(100, percentage)}%; background-color: ${category.color || '#cccccc'};"></div>
+            </div>
+             <p class="text-right text-xs sm:text-sm mt-1 font-medium ${remaining < 0 ? 'text-red-500' : 'text-gray-600'}">
+                ${remaining.toFixed(2)} EGP remaining
+            </p>
+        </div>
+    `;
+    return card;
+}
+
+// ... (The rest of the functions from your original script will go here) ...
+// The following functions are copied from the original script without modification,
+// except for using constants and improved error handling where applicable.
+
+function attachCategoryEventListeners() {
+    document.getElementById('categoryDetailsContainer').addEventListener('click', (e) => {
+        const card = e.target.closest('.category-card');
+        if (!card) return;
+
+        if (e.target.closest('.edit-category-btn')) {
+            editingCategoryId = card.dataset.categoryId;
+            const category = currentBudget.categories.find(c => c.id === editingCategoryId);
+            if (category) openCategoryModal(category);
+        } else if (e.target.closest('.delete-category-btn')) {
+            const categoryIdToDelete = card.dataset.categoryId;
+            handleDeleteCategory(categoryIdToDelete);
+        } else {
+            const categoryId = card.dataset.categoryId;
+            document.querySelector('[data-tab="transactions"]').click();
+            document.getElementById('filterCategory').value = categoryId;
+            renderTransactionList();
+        }
+    });
+}
+
+function updateTransactionCategoryDropdown() {
+      const categorySelect = document.getElementById('modalTransactionCategory');
+      if(categorySelect) {
+          const currentValue = categorySelect.value;
+          categorySelect.innerHTML = '<option value="">Select Category</option>';
+          currentBudget.categories.forEach(cat => {
+              const option = document.createElement('option');
+              option.value = cat.id;
+              option.textContent = cat.name;
+              categorySelect.appendChild(option);
+          });
+          categorySelect.value = currentValue;
+      }
+}
+
+async function handleDeleteCategory(categoryId) {
+    const category = currentBudget.categories.find(c => c.id === categoryId);
+    if (!category) return;
+    
+    const confirmed = await showConfirmModal('Delete Category?', `Are you sure you want to delete the "${category.name}" category? All associated transactions will also be deleted.`);
+    if (confirmed) {
+        currentBudget.categories = currentBudget.categories.filter(c => c.id !== categoryId);
+        currentBudget.transactions = currentBudget.transactions.filter(t => t.categoryId !== categoryId);
+        recalculateSpentAmounts();
+        await saveBudget();
+        showNotification(`Category "${category.name}" deleted.`, 'success');
+    }
+}
+
+function openCategoryModal(category = null) {
+    editingCategoryId = category ? category.id : null;
+    const modalId = CONSTANTS.MODAL_IDS.category;
+    const modal = document.getElementById(modalId);
+    
+    let typeOptions = '';
+    currentBudget.types.forEach(type => {
+        const selected = category && category.type === type ? 'selected' : '';
+        typeOptions += `<option value="${type}" ${selected}>${type}</option>`;
+    });
+
+    modal.innerHTML = `
+        <div class="custom-modal-content">
+            <h2 class="custom-modal-title">${category ? 'Edit Category' : 'Add New Category'}</h2>
+            <form id="categoryForm">
+                <div class="mb-4">
+                    <label for="modalCategoryName" class="block text-gray-700 text-sm font-bold mb-2">Category Name:</label>
+                    <input type="text" id="modalCategoryName" class="form-input" value="${category ? category.name : ''}" required />
+                </div>
+                <div class="mb-4">
+                    <label for="modalAllocatedAmount" class="block text-gray-700 text-sm font-bold mb-2">Allocated Amount (EGP):</label>
+                    <input type="number" id="modalAllocatedAmount" class="form-input" min="0" step="0.01" value="${category ? category.allocated : ''}" required />
+                </div>
+                <div class="mb-6">
+                    <label for="modalCategoryType" class="block text-gray-700 text-sm font-bold mb-2">Category Type:</label>
+                    <select id="modalCategoryType" class="form-input">${typeOptions}</select>
+                </div>
+                <div class="custom-modal-buttons">
+                    <button type="button" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                    <button type="submit" class="custom-modal-button custom-modal-primary-button">${category ? 'Save Changes' : 'Add Category'}</button>
+                </div>
+            </form>
+        </div>
+    `;
+    showModal(modalId);
+    modal.querySelector('form').onsubmit = handleCategoryFormSubmit;
+    modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId);
+}
+
+async function handleCategoryFormSubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById('modalCategoryName').value;
+    const allocated = parseFloat(document.getElementById('modalAllocatedAmount').value);
+    const type = document.getElementById('modalCategoryType').value;
+    
+    if (editingCategoryId) {
+        const category = currentBudget.categories.find(c => c.id === editingCategoryId);
+        if (category) {
+            category.name = name;
+            category.allocated = allocated;
+            category.type = type;
+        }
+    } else {
+        currentBudget.categories.push({
+            id: name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+            name, allocated, spent: 0, type,
+            color: `#${(Math.random()*0xFFFFFF<<0).toString(16).padStart(6,'0')}`,
+            icon: defaultCategoryIcon
+        });
+    }
+    await saveBudget();
+    hideModal(CONSTANTS.MODAL_IDS.category);
+    editingCategoryId = null;
+    showNotification(`Category saved successfully.`, 'success');
+}
+
+function openTransactionModal(transaction = null) {
+    editingTransactionId = transaction ? transaction.id : null;
+    const modalId = CONSTANTS.MODAL_IDS.transaction;
+    const modal = document.getElementById(modalId);
+    
+    let paymentMethodOptions = '';
+    currentBudget.paymentMethods.forEach(pm => {
+        const selected = transaction && transaction.paymentMethod === pm ? 'selected' : '';
+        paymentMethodOptions += `<option value="${pm}" ${selected}>${pm}</option>`;
+    });
+    
+    let subcategoryOptions = '<option value="">None</option>';
+    // Subcategories are now dynamically populated based on selected category
+    
+    modal.innerHTML = `
+         <div class="custom-modal-content">
+            <h2 class="custom-modal-title">${transaction ? 'Edit Expense' : 'Add New Expense'}</h2>
+            <form id="transactionForm">
+                <div class="mb-4">
+                    <label for="modalTransactionAmount" class="block text-gray-700 text-sm font-bold mb-2">Amount (EGP):</label>
+                    <input type="number" id="modalTransactionAmount" class="form-input" min="0" step="0.01" value="${transaction ? transaction.amount : ''}" required />
+                </div>
+                <div class="mb-4">
+                    <label for="modalTransactionCategory" class="block text-gray-700 text-sm font-bold mb-2">Category:</label>
+                    <select id="modalTransactionCategory" class="form-input" required></select>
+                </div>
+                <div class="mb-4">
+                    <label for="modalTransactionSubcategory" class="block text-gray-700 text-sm font-bold mb-2">Subcategory (Optional):</label>
+                    <select id="modalTransactionSubcategory" class="form-input">${subcategoryOptions}</select>
+                </div>
+                <div class="mb-4">
+                    <label for="modalTransactionPaymentMethod" class="block text-gray-700 text-sm font-bold mb-2">Payment Method:</label>
+                    <select id="modalTransactionPaymentMethod" class="form-input" required>${paymentMethodOptions}</select>
+                </div>
+                <div class="mb-4">
+                    <label for="modalTransactionDescription" class="block text-gray-700 text-sm font-bold mb-2">Description (Optional):</label>
+                    <input type="text" id="modalTransactionDescription" class="form-input" value="${transaction ? transaction.description : ''}" />
+                </div>
+                <div class="mb-6">
+                    <label for="modalTransactionDate" class="block text-gray-700 text-sm font-bold mb-2">Date & Time:</label>
+                    <input type="datetime-local" id="modalTransactionDate" class="form-input" value="${transaction ? transaction.date : new Date().toISOString().slice(0, 16)}" required />
+                </div>
+                <div class="custom-modal-buttons">
+                    <button type="button" class="custom-modal-button custom-modal-cancel">Cancel</button>
+                    <button type="submit" class="custom-modal-button custom-modal-primary-button">${transaction ? 'Save Changes' : 'Add Expense'}</button>
+                </div>
+            </form>
+        </div>
+    `;
+    updateTransactionCategoryDropdown();
+    if(transaction) {
+        document.getElementById('modalTransactionCategory').value = transaction.categoryId;
+        updateSubcategoryDropdown(transaction.categoryId, transaction.subcategory);
+    }
+    showModal(modalId);
+    modal.querySelector('form').onsubmit = handleTransactionFormSubmit;
+    modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId);
+    document.getElementById('modalTransactionCategory').onchange = (e) => updateSubcategoryDropdown(e.target.value);
+}
+
+function updateSubcategoryDropdown(categoryId, selectedSubcategory) {
+    const subcategorySelect = document.getElementById('modalTransactionSubcategory');
+    subcategorySelect.innerHTML = '<option value="">None</option>';
+    if (categoryId) {
+        for(const sub in currentBudget.subcategories) {
+            if (currentBudget.subcategories[sub].includes(categoryId)) {
+                const option = document.createElement('option');
+                option.value = sub;
+                option.textContent = sub;
+                if (sub === selectedSubcategory) {
+                    option.selected = true;
+                }
+                subcategorySelect.appendChild(option);
+            }
+        }
+    }
+}
+
+async function handleTransactionFormSubmit(e) {
+    e.preventDefault();
+    const newTransaction = {
+        id: editingTransactionId || `trans-${Date.now()}`,
+        amount: parseFloat(document.getElementById('modalTransactionAmount').value),
+        categoryId: document.getElementById('modalTransactionCategory').value,
+        subcategory: document.getElementById('modalTransactionSubcategory').value,
+        paymentMethod: document.getElementById('modalTransactionPaymentMethod').value,
+        description: document.getElementById('modalTransactionDescription').value,
+        date: document.getElementById('modalTransactionDate').value,
+    };
+
+    if (editingTransactionId) {
+        const index = currentBudget.transactions.findIndex(t => t.id === editingTransactionId);
+        if (index > -1) currentBudget.transactions[index] = newTransaction;
+    } else {
+        currentBudget.transactions.push(newTransaction);
+    }
+    
+    recalculateSpentAmounts();
+    await saveBudget();
+    hideModal(CONSTANTS.MODAL_IDS.transaction);
+    editingTransactionId = null;
+    showNotification('Transaction saved.', 'success');
+}
+
+function recalculateSpentAmounts() {
+    currentBudget.categories.forEach(cat => cat.spent = 0);
+    currentBudget.transactions.forEach(trans => {
+        const category = currentBudget.categories.find(cat => cat.id === trans.categoryId);
+        if (category) category.spent += trans.amount;
+    });
+}
+
+function formatTimestamp(isoString) {
+    if (!isoString) return 'Invalid Date';
+    const date = new Date(isoString);
+    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
+    return date.toLocaleString('en-US', options);
+}
+
+function renderTransactionList() {
+    const listEl = document.getElementById('transactionList');
+    const filterCategory = document.getElementById('filterCategory');
+    const filterPaymentMethod = document.getElementById('filterPaymentMethod');
+    const filterStartDate = document.getElementById('filterStartDate');
+    const filterEndDate = document.getElementById('filterEndDate');
+
+    if (!listEl || !filterCategory || !filterPaymentMethod || !filterStartDate || !filterEndDate) return;
+
+    const selectedCategory = filterCategory.value;
+    const selectedPaymentMethod = filterPaymentMethod.value;
+    const startDate = filterStartDate.value ? new Date(filterStartDate.value) : null;
+    const endDate = filterEndDate.value ? new Date(filterEndDate.value) : null;
+    if(endDate) endDate.setHours(23, 59, 59, 999); // Include the whole end day
+
+    listEl.innerHTML = '';
+
+    if (!currentBudget || !currentBudget.transactions || currentBudget.transactions.length === 0) {
+        listEl.innerHTML = '<p class="text-gray-500 text-center">No transactions recorded yet.</p>';
+        renderTransactionPieChart([]);
+        return;
+    }
+
+    const filteredTransactions = currentBudget.transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        const categoryMatch = selectedCategory === 'all' || t.categoryId === selectedCategory;
+        const paymentMethodMatch = selectedPaymentMethod === 'all' || t.paymentMethod === selectedPaymentMethod;
+        const startDateMatch = !startDate || transactionDate >= startDate;
+        const endDateMatch = !endDate || transactionDate <= endDate;
+        return categoryMatch && paymentMethodMatch && startDateMatch && endDateMatch;
+    });
+
+    if (filteredTransactions.length === 0) {
+        listEl.innerHTML = '<p class="text-gray-500 text-center">No transactions match the current filters.</p>';
+    } else {
+        const grouped = filteredTransactions.reduce((acc, t) => {
+            (acc[t.categoryId] = acc[t.categoryId] || []).push(t);
+            return acc;
+        }, {});
+
+        for (const categoryId in grouped) {
+            const category = currentBudget.categories.find(c => c.id === categoryId);
+            if (category) {
+                const section = document.createElement('div');
+                section.innerHTML = `<h3 class="font-semibold text-lg" style="color: ${category.color};">${category.name}</h3>`;
+                const ul = document.createElement('ul');
+                ul.className = 'space-y-2 pl-4';
+                grouped[categoryId]
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .forEach(t => {
+                        const li = document.createElement('li');
+                        li.className = 'flex justify-between items-center bg-white p-2 rounded-md shadow-sm';
+                        li.innerHTML = `
+                            <div class="flex-1">
+                                <p class="font-medium">${t.description || 'Expense'} ${t.subcategory ? `<span class="text-xs text-gray-500">(${t.subcategory})</span>` : ''}</p>
+                                <p class="text-sm text-gray-500">${formatTimestamp(t.date)} - ${t.paymentMethod || ''}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold">${t.amount.toFixed(2)} EGP</span>
+                                <button data-edit-id="${t.id}" class="edit-transaction-btn p-1 text-gray-400 hover:text-blue-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                </button>
+                                <button data-delete-id="${t.id}" class="delete-transaction-btn p-1 text-gray-400 hover:text-red-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
+                            </div>
+                        `;
+                        ul.appendChild(li);
+                    });
+                section.appendChild(ul);
+                listEl.appendChild(section);
+            }
+        }
+    }
+    renderTransactionPieChart(filteredTransactions);
+}
+
+function populateTransactionFilters() {
+    const filterCategory = document.getElementById('filterCategory');
+    const filterPaymentMethod = document.getElementById('filterPaymentMethod');
+
+    if (!filterCategory || !filterPaymentMethod) return;
+
+    // Populate Category Filter
+    const currentCategory = filterCategory.value;
+    filterCategory.innerHTML = '<option value="all">All Categories</option>';
+    currentBudget.categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = cat.name;
+        filterCategory.appendChild(option);
+    });
+    filterCategory.value = currentCategory;
+
+    // Populate Payment Method Filter
+    const currentPayment = filterPaymentMethod.value;
+    filterPaymentMethod.innerHTML = '<option value="all">All Payment Methods</option>';
+    currentBudget.paymentMethods.forEach(pm => {
+        const option = document.createElement('option');
+        option.value = pm;
+        option.textContent = pm;
+        filterPaymentMethod.appendChild(option);
+    });
+    filterPaymentMethod.value = currentPayment;
+}
+
+async function renderHistoryList() {
+    const historyList = document.getElementById('monthlyHistoryList');
+    if (!historyList) return;
+    historyList.innerHTML = '<div class="spinner"></div>';
+    
+    const archiveColRef = collection(db, `artifacts/${appId}/users/${userId}/archive`);
+    try {
+        const snapshot = await getDocs(archiveColRef);
+        historyList.innerHTML = '';
+        if (snapshot.empty) {
+            historyList.innerHTML = '<p class="text-gray-500 text-center">No archives found.</p>';
+            return;
+        }
+        snapshot.docs
+            .sort((a, b) => b.id.localeCompare(a.id)) // Sort descending by year-month
+            .forEach(doc => {
+                const monthItem = document.createElement('div');
+                monthItem.className = 'bg-white p-3 rounded-lg flex justify-between items-center shadow-sm';
+                monthItem.innerHTML = `
+                    <span class="font-semibold">${doc.id}</span>
+                    <button data-archive-id="${doc.id}" class="view-archive-btn btn bg-indigo-500 hover:bg-indigo-600 btn-sm py-1 px-3">View</button>
+                `;
+                historyList.appendChild(monthItem);
+            });
+    } catch (error) {
+        console.error("Error fetching archives:", error);
+        historyList.innerHTML = '<p class="text-red-500 text-center">Could not load history.</p>';
+        showNotification("Failed to load budget history.", "danger");
+    }
+}
+
+function renderArchivedMonthDetails(archiveId, data) {
+    const modalId = CONSTANTS.MODAL_IDS.archivedDetails;
+    const modal = document.getElementById(modalId);
+    modal.innerHTML = `
+         <div class="custom-modal-content" style="max-width: 800px;">
+            <h2 class="custom-modal-title">Details for ${archiveId}</h2>
+            <div id="archivedMonthContent" class="max-h-[70vh] overflow-y-auto pr-2"></div>
+            <div class="custom-modal-buttons justify-center">
+                <button type="button" class="custom-modal-button custom-modal-cancel">Close</button>
+            </div>
+        </div>
+    `;
+    const contentEl = document.getElementById('archivedMonthContent');
+    const totalSpent = (data.categories || []).reduce((sum, cat) => sum + (cat.spent || 0), 0);
+
+    contentEl.innerHTML = `
+        <div class="bg-indigo-50 p-4 rounded-lg mb-6">
+            <h3 class="text-xl font-bold text-indigo-800 mb-2">Summary</h3>
+            <div class="grid grid-cols-2 gap-4 text-center">
+                <div><p class="text-sm text-gray-600">Income</p><p class="font-bold text-lg">${(data.income || 0).toFixed(2)} EGP</p></div>
+                <div><p class="text-sm text-gray-600">Total Spent</p><p class="font-bold text-lg text-red-600">${totalSpent.toFixed(2)} EGP</p></div>
+            </div>
+        </div>
+        <div class="mb-6">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-xl font-semibold">Spending Breakdown</h3>
+                <select id="archivePieChartGroup" class="form-input w-auto">
+                    <option value="category">By Category</option>
+                    <option value="type">By Type</option>
+                    <option value="subcategory">By Subcategory</option>
+                </select>
+            </div>
+            <div class="relative h-80"><canvas id="archivePieChart"></canvas></div>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-4">Transactions</h3>
+        <ul class="space-y-2">${(data.transactions || []).sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => {
+            const categoryName = (data.categories || []).find(c => c.id === t.categoryId)?.name || 'Unknown';
+            return `<li class="flex justify-between items-center bg-gray-50 p-2 rounded-md">
+                <div><p class="font-medium">${t.description || 'Expense'} ${t.subcategory ? `<span class="text-xs text-gray-500">(${t.subcategory})</span>` : ''}</p><p class="text-sm text-gray-500">${categoryName} - ${formatTimestamp(t.date)} - ${t.paymentMethod || ''}</p></div>
+                <span class="font-bold">${(t.amount || 0).toFixed(2)} EGP</span></li>`;
+        }).join('') || '<p class="text-gray-500 text-center">No transactions for this month.</p>'}</ul>
+    `;
+    
+    // This is a temporary context for the modal's pie chart.
+    const renderPie = () => renderPieChart(
+        'archivePieChart', 
+        data,
+        document.getElementById('archivePieChartGroup').value,
+    );
+    renderPie();
+    document.getElementById('archivePieChartGroup').onchange = renderPie;
+
+    modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId);
+}
+
+
+// --- Voice Command Functionality ---
+function setupSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        dom.voiceFab.disabled = true;
+        return;
+    }
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => { dom.voiceFab.classList.add('listening'); showNotification("Listening...", "info"); };
+    recognition.onend = () => { dom.voiceFab.classList.remove('listening'); };
+    recognition.onerror = (event) => {
+        console.error("Speech recognition error", event.error);
+        let message = `Error: ${event.error}`;
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            message = "Microphone permission denied. Please enable it in your browser settings.";
+        } else if (event.error === 'no-speech') {
+            message = "No speech was detected.";
+        }
+        showNotification(message, "danger");
+    };
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.toLowerCase();
+        processVoiceCommand(transcript);
+    };
+}
+
+function processVoiceCommand(transcript) {
+    const numbers = transcript.match(/(\d+(\.\d+)?)/);
+    if (!numbers) {
+        showNotification("Could not detect an amount in your command.", "danger");
+        return;
+    }
+    const amount = parseFloat(numbers[0]);
+
+    let foundCategoryId = null;
+    for (const categoryId in categoryMapping) {
+        if (categoryMapping[categoryId].some(keyword => transcript.includes(keyword))) {
+            foundCategoryId = categoryId;
+            break;
+        }
+    }
+
+    if (!foundCategoryId) {
+        showNotification(`Could not detect a category for: "${transcript}"`, "danger");
+        return;
+    }
+
+    const newTransaction = {
+        id: `trans-${Date.now()}`, amount, categoryId: foundCategoryId,
+        description: `Voice entry: "${transcript}"`,
+        date: new Date().toISOString(),
+        paymentMethod: 'Cash', // Default for voice
+        subcategory: ''
+    };
+
+    currentBudget.transactions.push(newTransaction);
+    recalculateSpentAmounts();
+    saveBudget();
+    const categoryName = currentBudget.categories.find(c => c.id === foundCategoryId)?.name || 'category';
+    showNotification(`Added ${amount.toFixed(2)} EGP to ${categoryName}.`, "success");
+}
+
+// --- Chart Rendering ---
+async function renderBudgetChart() {
+    const chartContainer = document.getElementById('chartContainer');
+    if (!chartContainer) return;
+    chartContainer.innerHTML = '<div class="spinner"></div>';
+
+    const archiveColRef = collection(db, `artifacts/${appId}/users/${userId}/archive`);
+    try {
+        const snapshot = await getDocs(archiveColRef);
+        
+        if (snapshot.docs.length < 2) {
+            chartContainer.innerHTML = '<p class="text-gray-500 text-center">Not enough data to display a chart. Archive at least two months.</p>';
+            return;
+        }
+
+        const archives = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a, b) => a.id.localeCompare(b.id));
+
+        const labels = archives.map(archive => archive.id);
+        const totalSpentData = archives.map(archive => 
+            (archive.categories || []).reduce((sum, cat) => sum + (cat.spent || 0), 0)
+        );
+        const incomeData = archives.map(archive => archive.income || 0);
+
+        chartContainer.innerHTML = '<canvas id="budgetChartCanvas"></canvas>';
+        const ctx = document.getElementById('budgetChartCanvas').getContext('2d');
+
+        if (budgetChart) budgetChart.destroy();
+
+        budgetChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Total Spent', data: totalSpentData,
+                        borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true, tension: 0.2
+                    },
+                    {
+                        label: 'Total Budget', data: incomeData,
+                        borderColor: '#22C55E', backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        fill: false, tension: 0.2, borderDash: [5, 5]
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { callback: value => `${value} EGP` } } },
+                plugins: { legend: { position: 'top' }, title: { display: true, text: 'Monthly Spending vs. Budget' } }
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching archives for chart:", error);
+        chartContainer.innerHTML = '<p class="text-red-500 text-center">Could not load chart data.</p>';
+        showNotification("Failed to load history chart.", "danger");
+    }
+}
+
+function renderPieChart(canvasId, budgetData, groupBy) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    // A bit of a hack to manage multiple pie charts
+    let chartInstance;
+    if (canvasId === 'transactionPieChart') {
+        if (transactionPieChart) transactionPieChart.destroy();
+        chartInstance = transactionPieChart;
+    } else {
+        // Assume a temporary chart, no need to destroy a global instance
+    }
+
+    const transactions = budgetData.transactions || [];
+    if (transactions.length === 0) {
+        return;
+    }
+
+    const dataMap = new Map();
+    const categories = budgetData.categories || [];
+
+    transactions.forEach(t => {
+        let key, color;
+        const category = categories.find(c => c.id === t.categoryId);
+        if (groupBy === 'category') {
+            key = category?.name || 'Unknown';
+        } else if (groupBy === 'type') {
+            key = category?.type || 'Unknown';
+        } else { // subcategory
+            key = t.subcategory || 'Uncategorized';
+        }
+        dataMap.set(key, (dataMap.get(key) || 0) + t.amount);
+    });
+
+    const labels = [...dataMap.keys()];
+    const data = [...dataMap.values()];
+
+    const chart = new Chart(canvas.getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: labels.map(label => {
+                    const category = categories.find(c => c.name === label || c.type === label);
+                    return category ? category.color : `#${(Math.random()*0xFFFFFF<<0).toString(16).padStart(6,'0')}`;
+                }),
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+            }
+        }
+    });
+
+    if (canvasId === 'transactionPieChart') {
+        transactionPieChart = chart;
+    }
+}
+
+function renderTransactionPieChart(filteredTransactions) {
+    const groupBy = document.getElementById('transactionPieChartGroup').value;
+    const budgetData = {
+        transactions: filteredTransactions,
+        categories: currentBudget.categories
+    };
+    renderPieChart('transactionPieChart', budgetData, groupBy);
+}
+
+
+function populateForecastDropdown() {
+    const select = document.getElementById('forecastSelect');
+    if (!select) return;
+    
+    const currentValue = select.value;
+
+    select.innerHTML = '<option value="overall">Overall Budget</option>';
+    
+    currentBudget.types.forEach(type => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = type;
+        
+        const typeOption = document.createElement('option');
+        typeOption.value = `type-${type}`;
+        typeOption.textContent = `${type} (Type)`;
+        optgroup.appendChild(typeOption);
+
+        currentBudget.categories.filter(c => c.type === type).forEach(cat => {
+            const option = document.createElement('option');
+            option.value = `category-${cat.id}`;
+            option.textContent = `  ${cat.name}`;
+            optgroup.appendChild(option);
+        });
+        select.appendChild(optgroup);
+    });
+
+    if (Array.from(select.options).some(opt => opt.value === currentValue)) {
+        select.value = currentValue;
+    } else {
+        select.value = 'overall';
+    }
+
+    calculateForecast();
+}
+
+function calculateForecast() {
+    const selectedValue = document.getElementById('forecastSelect').value;
+    const resultDiv = document.getElementById('forecastResult');
+    const metricsDiv = document.getElementById('forecastMetrics');
+    const canvas = document.getElementById('forecastChartCanvas');
+    const warningDiv = document.getElementById('forecastWarning');
+    
+    resultDiv.classList.remove('hidden');
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const dayOfMonth = now.getDate();
+    // Ensure daysRemaining is at least 1 to avoid division by zero
+    const daysRemaining = Math.max(1, daysInMonth - dayOfMonth);
+
+    let allocatedAmount = 0;
+    let spentAmount = 0;
+    let title = "Overall Budget";
+    let transactionsToConsider = currentBudget.transactions;
+
+    if (selectedValue === 'overall') {
+        allocatedAmount = currentBudget.income;
+        spentAmount = currentBudget.categories.reduce((sum, cat) => sum + cat.spent, 0);
+    } else if (selectedValue.startsWith('type-')) {
+        const typeName = selectedValue.replace('type-', '');
+        const categoriesOfType = currentBudget.categories.filter(c => c.type === typeName);
+        const categoryIds = categoriesOfType.map(c => c.id);
+        allocatedAmount = categoriesOfType.reduce((sum, cat) => sum + cat.allocated, 0);
+        spentAmount = categoriesOfType.reduce((sum, cat) => sum + cat.spent, 0);
+        transactionsToConsider = currentBudget.transactions.filter(t => categoryIds.includes(t.categoryId));
+        title = typeName;
+    } else if (selectedValue.startsWith('category-')) {
+        const catId = selectedValue.replace('category-', '');
+        const category = currentBudget.categories.find(c => c.id === catId);
+        if (category) {
+            allocatedAmount = category.allocated;
+            spentAmount = category.spent;
+            transactionsToConsider = currentBudget.transactions.filter(t => t.categoryId === catId);
+            title = category.name;
+        }
+    }
+    
+    const recommendedDailySpending = (allocatedAmount - spentAmount) / daysRemaining;
+    
+    // Chart Data
+    const labels = Array.from({ length: daysInMonth }, (_, i) => new Date(currentYear, currentMonth, i + 1));
+    const cumulativeSpendingData = [];
+    let dailyTotal = 0;
+    for(let i=0; i < dayOfMonth; i++) {
+        const dayTransactions = transactionsToConsider.filter(t => new Date(t.date).getDate() === (i + 1));
+        dailyTotal += dayTransactions.reduce((sum, t) => sum + t.amount, 0);
+        cumulativeSpendingData.push({ x: labels[i], y: dailyTotal });
+    }
+
+    const averageDailySpending = dayOfMonth > 0 ? spentAmount / dayOfMonth : 0;
+    const forecastData = [...cumulativeSpendingData];
+    let lastSpentValue = cumulativeSpendingData.length > 0 ? cumulativeSpendingData[cumulativeSpendingData.length - 1].y : 0;
+
+    for(let i = dayOfMonth; i < daysInMonth; i++) {
+        lastSpentValue += averageDailySpending;
+        forecastData.push({ x: labels[i], y: lastSpentValue });
+    }
+    
+    metricsDiv.innerHTML = `
+        <div class="bg-gray-100 p-3 rounded-lg">
+            <p class="text-sm text-gray-600">Daily Average</p>
+            <p class="text-xl font-bold text-yellow-600">${averageDailySpending.toFixed(2)} EGP</p>
+        </div>
+        <div class="bg-gray-100 p-3 rounded-lg">
+            <p class="text-sm text-gray-600">Daily Recommended</p>
+            <p class="text-xl font-bold ${recommendedDailySpending < 0 ? 'text-red-600' : 'text-blue-600'}">${recommendedDailySpending.toFixed(2)} EGP</p>
+        </div>
+    `;
+    
+    // Overspending Warning
+    const projectedEndAmount = forecastData[daysInMonth - 1].y;
+    if (allocatedAmount > 0 && projectedEndAmount > allocatedAmount) {
+        let overspendDay = dayOfMonth;
+        for (let i = dayOfMonth - 1; i < daysInMonth; i++) {
+            if (forecastData[i].y > allocatedAmount) {
+                overspendDay = i + 1;
+                break;
+            }
+        }
+        const overspendFullDate = new Date(now.getFullYear(), now.getMonth(), overspendDay);
+        warningDiv.textContent = `Warning! At this rate, you are projected to overspend your budget around ${overspendFullDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.`;
+        warningDiv.classList.remove('hidden');
+    } else {
+        warningDiv.classList.add('hidden');
+    }
+    
+    if (forecastChart) forecastChart.destroy();
+    
+    const spentLineData = cumulativeSpendingData.map(d => ({x: d.x, y: d.y}));
+    if (spentLineData.length > 0) {
+        spentLineData.push({x: forecastData[dayOfMonth-1].x, y: forecastData[dayOfMonth-1].y});
+    }
+
+    forecastChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            datasets: [
+                {
+                    label: 'Spent',
+                    data: spentLineData,
+                    borderColor: '#10B981', // Green
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: 'start',
+                    tension: 0.2,
+                    pointRadius: 2,
+                },
+                {
+                    label: 'Forecast',
+                    data: forecastData.slice(dayOfMonth - 1),
+                    borderColor: '#EF4444', // Red
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.2,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        displayFormats: { day: 'd MMM' }
+                    },
+                    ticks: { major: { enabled: true } },
+                    grid: { display: false }
+                },
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: allocatedAmount * 1.1,
+                    ticks: {
+                        callback: function(value) {
+                            if (value >= 1000) return value / 1000 + 'K';
+                            return value;
+                        }
+                    }
+                }
+            },
+            plugins: { 
+                legend: { position: 'top' }, 
+                title: { display: true, text: `Spending Forecast for ${title}` },
+                annotation: {
+                    annotations: {
+                        todayLine: {
+                            type: 'line',
+                            scaleID: 'x',
+                            value: now.getTime(),
+                            borderColor: 'rgb(59, 130, 246)',
+                            borderWidth: 2,
+                            label: { content: 'Today', enabled: true, position: 'start' }
+                        },
+                        limitLine: {
+                            type: 'line',
+                            scaleID: 'y',
+                            value: allocatedAmount,
+                            borderColor: '#6b7280',
+                            borderWidth: 2,
+                            borderDash: [6, 6],
+                            label: { content: 'Limit', enabled: true, position: 'end' }
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// --- Management Modals (Refactored) ---
+function openManagementModal({ modalId, title, items, placeholder, onAdd, onDelete }) {
+    const modal = document.getElementById(modalId);
+    
+    const renderItems = (currentItems) => {
+        const itemsList = currentItems.map(item => `
+            <li class="flex justify-between items-center bg-gray-100 p-2 rounded-md">
+                <span>${item}</span>
+                <button data-item-name="${item}" class="delete-item-btn p-1 text-gray-400 hover:text-red-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+            </li>
+        `).join('');
+
+        modal.innerHTML = `
+            <div class="custom-modal-content">
+                <h2 class="custom-modal-title">${title}</h2>
+                <ul class="space-y-2 mb-4">${itemsList}</ul>
+                <form id="addItemForm" class="flex gap-2">
+                    <input type="text" id="newItemName" class="form-input" placeholder="${placeholder}" required />
+                    <button type="submit" class="btn btn-purple">Add</button>
+                </form>
+                <div class="custom-modal-buttons justify-center">
+                   <button type="button" class="custom-modal-button custom-modal-cancel">Close</button>
+                </div>
+            </div>`;
+        
+        modal.querySelector('#addItemForm').onsubmit = (e) => {
+            e.preventDefault();
+            const newItemInput = document.getElementById('newItemName');
+            const newItemName = newItemInput.value.trim();
+            if (newItemName && !currentItems.includes(newItemName)) {
+                onAdd(newItemName).then(() => renderItems(currentBudget[items] || currentBudget.paymentMethods)); // Re-render with updated list
+            }
+            newItemInput.value = '';
+        };
+
+        modal.querySelectorAll('.delete-item-btn').forEach(btn => {
+            btn.onclick = async (e) => {
+                const itemName = e.currentTarget.dataset.itemName;
+                if (await onDelete(itemName)) {
+                    renderItems(currentBudget[items] || currentBudget.paymentMethods); // Re-render
+                }
+            };
+        });
+
+        modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId);
+    };
+
+    renderItems(currentBudget[items] || currentBudget.paymentMethods);
+    showModal(modalId);
+}
+
+// --- Event Listeners ---
+function initializeEventListeners() {
+    dom.tabs.forEach(button => {
+        button.addEventListener('click', () => {
+            const tab = button.dataset.tab;
+            
+            dom.tabs.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            dom.tabPanels.forEach(panel => {
+                panel.classList.toggle('active', panel.id === `tab-${tab}`);
+            });
+        });
+    });
+
+    document.getElementById('editIncomeButton').onclick = async () => {
+        const newIncomeStr = prompt("Enter new monthly income:", currentBudget.income);
+        if (newIncomeStr !== null) {
+            const newIncome = parseFloat(newIncomeStr);
+            if (!isNaN(newIncome) && newIncome >= 0) {
+                currentBudget.income = newIncome;
+                await saveBudget();
+                showNotification("Income updated successfully!", "success");
+            } else {
+                showNotification("Invalid input. Please enter a valid number.", "danger");
+            }
+        }
+    };
+
+    document.getElementById('addCategoryModalButton').onclick = () => openCategoryModal();
+    document.getElementById('addExpenseFab').onclick = () => openTransactionModal();
+    dom.voiceFab.onclick = () => {
+        if (!recognition) return showNotification("Voice recognition is not available on this browser.", "danger");
+        try { recognition.start(); } catch (e) { console.error("Could not start recognition:", e); }
+    };
+
+    document.getElementById('archiveMonthButton').onclick = async () => {
+         const confirmed = await showConfirmModal('Archive Month?', 'This will save a snapshot of the current budget and reset all spending for the new month. This cannot be undone.');
+        if (confirmed) {
+            const now = new Date();
+            const archiveId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
+            try {
+                await setDoc(archiveDocRef, currentBudget);
+                currentBudget.transactions = [];
+                currentBudget.categories.forEach(c => c.spent = 0);
+                await saveBudget();
+                showNotification(`Budget for ${archiveId} has been archived.`, 'success');
+            } catch (error) {
+                console.error("Error archiving month:", error);
+                showNotification("Archiving failed. Please try again.", "danger");
+            }
+        }
+    };
+    
+    document.getElementById('manageTypesButton').onclick = () => {
+        openManagementModal({
+            modalId: CONSTANTS.MODAL_IDS.manageItems,
+            title: "Manage Category Types",
+            items: "types",
+            placeholder: "New Type Name",
+            onAdd: async (name) => {
+                currentBudget.types.push(name);
+                await saveBudget();
+            },
+            onDelete: async (name) => {
+                const categoriesUsingType = currentBudget.categories.filter(c => c.type === name);
+                const confirmed = await showConfirmModal(
+                    'Delete Type?',
+                    `Are you sure you want to delete "${name}"? This will also delete ${categoriesUsingType.length} associated categories and all their transactions.`
+                );
+                if (confirmed) {
+                    currentBudget.types = currentBudget.types.filter(t => t !== name);
+                    const categoryIdsToDelete = categoriesUsingType.map(c => c.id);
+                    currentBudget.categories = currentBudget.categories.filter(c => c.type !== name);
+                    currentBudget.transactions = currentBudget.transactions.filter(t => !categoryIdsToDelete.includes(t.categoryId));
+                    await saveBudget();
+                }
+                return confirmed;
+            }
+        });
+    };
+    
+    document.getElementById('managePaymentsButton').onclick = () => {
+        openManagementModal({
+            modalId: CONSTANTS.MODAL_IDS.manageItems,
+            title: "Manage Payment Methods",
+            items: "paymentMethods",
+            placeholder: "New Payment Method",
+            onAdd: async (name) => {
+                currentBudget.paymentMethods.push(name);
+                await saveBudget();
+            },
+            onDelete: async (name) => {
+                const confirmed = await showConfirmModal(
+                    'Delete Payment Method?',
+                    `Are you sure you want to delete "${name}"? This will not affect existing transactions.`
+                );
+                if (confirmed) {
+                    currentBudget.paymentMethods = currentBudget.paymentMethods.filter(pm => pm !== name);
+                    await saveBudget();
+                }
+                return confirmed;
+            }
+        });
+    };
+    
+    document.getElementById('manageSubcategoriesButton').onclick = () => {
+        const modalId = CONSTANTS.MODAL_IDS.manageSubcategories;
+        const modal = document.getElementById(modalId);
+        
+        const renderSubcategories = () => {
+            const subcategoriesList = Object.keys(currentBudget.subcategories).map(sub => `
+                <li class="bg-gray-100 p-3 rounded-md">
+                    <div class="flex justify-between items-center mb-2">
+                       <span class="font-semibold">${sub}</span>
+                       <button data-sub-name="${sub}" class="delete-sub-btn p-1 text-gray-400 hover:text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                       </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        ${currentBudget.categories.map(cat => `
+                            <div>
+                                <input type="checkbox" id="sub-${sub}-${cat.id}" data-sub-name="${sub}" data-cat-id="${cat.id}" class="mr-2" ${currentBudget.subcategories[sub].includes(cat.id) ? 'checked' : ''}>
+                                <label for="sub-${sub}-${cat.id}">${cat.name}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                </li>
+            `).join('');
+
+            modal.innerHTML = `
+                <div class="custom-modal-content">
+                    <h2 class="custom-modal-title">Manage Subcategories</h2>
+                    <ul class="space-y-4 mb-4 max-h-60 overflow-y-auto">${subcategoriesList}</ul>
+                    <form id="addSubcategoryForm" class="flex gap-2">
+                        <input type="text" id="newSubcategoryName" class="form-input" placeholder="New Subcategory Name" required />
+                        <button type="submit" class="btn btn-purple">Add</button>
+                    </form>
+                    <div class="custom-modal-buttons justify-center">
+                       <button type="button" class="custom-modal-button custom-modal-cancel">Close</button>
+                    </div>
+                </div>`;
+            
+            modal.querySelector('#addSubcategoryForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const newNameInput = document.getElementById('newSubcategoryName');
+                const newName = newNameInput.value.trim();
+                if (newName && !currentBudget.subcategories[newName]) {
+                    currentBudget.subcategories[newName] = [];
+                    await saveBudget();
+                    renderSubcategories();
+                }
+                newNameInput.value = '';
+            };
+            
+            modal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.onchange = async (e) => {
+                    const subName = e.target.dataset.subName;
+                    const catId = e.target.dataset.catId;
+                    if (e.target.checked) {
+                        if (!currentBudget.subcategories[subName].includes(catId)) {
+                            currentBudget.subcategories[subName].push(catId);
+                        }
+                    } else {
+                        currentBudget.subcategories[subName] = currentBudget.subcategories[subName].filter(id => id !== catId);
+                    }
+                    await saveBudget();
+                };
+            });
+            
+            modal.querySelectorAll('.delete-sub-btn').forEach(btn => {
+                btn.onclick = async (e) => {
+                    const subName = e.currentTarget.dataset.subName;
+                    const confirmed = await showConfirmModal(
+                        'Delete Subcategory?',
+                        `Are you sure you want to delete "${subName}"? This will remove it from all transactions and categories.`
+                    );
+
+                    if (confirmed) {
+                        delete currentBudget.subcategories[subName];
+                        currentBudget.transactions.forEach(t => {
+                            if (t.subcategory === subName) t.subcategory = '';
+                        });
+                        await saveBudget();
+                        renderSubcategories();
+                    }
+                };
+            });
+            
+            modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId);
+        };
+
+        renderSubcategories();
+        showModal(modalId);
+    };
+
+    document.getElementById('filterCategory').addEventListener('change', renderTransactionList);
+    document.getElementById('filterPaymentMethod').addEventListener('change', renderTransactionList);
+    document.getElementById('filterStartDate').addEventListener('change', renderTransactionList);
+    document.getElementById('filterEndDate').addEventListener('change', renderTransactionList);
+    document.getElementById('clearFiltersButton').addEventListener('click', () => {
+        document.getElementById('filterCategory').value = 'all';
+        document.getElementById('filterPaymentMethod').value = 'all';
+        document.getElementById('filterStartDate').value = '';
+        document.getElementById('filterEndDate').value = '';
+        renderTransactionList();
+    });
+
+    document.getElementById('transactionPieChartGroup').addEventListener('change', renderTransactionList);
+    document.getElementById('forecastSelect').onchange = calculateForecast;
+    
+    document.getElementById('transactionList').addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-transaction-btn');
+        if (editBtn) {
+            const transactionId = editBtn.dataset.editId;
+            const transaction = currentBudget.transactions.find(t => t.id === transactionId);
+            if(transaction) openTransactionModal(transaction);
+        }
+        const deleteBtn = e.target.closest('.delete-transaction-btn');
+        if(deleteBtn) {
+            const transactionId = deleteBtn.dataset.deleteId;
+            handleDeleteTransaction(transactionId);
+        }
+    });
+    
+    document.getElementById('monthlyHistoryList').addEventListener('click', async (e) => {
+        const viewBtn = e.target.closest('.view-archive-btn');
+        if (viewBtn) {
+            const archiveId = viewBtn.dataset.archiveId;
+            const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/archive/${archiveId}`);
+            try {
+                const docSnap = await getDoc(archiveDocRef);
+                if (docSnap.exists()) {
+                    renderArchivedMonthDetails(archiveId, docSnap.data());
+                    showModal(CONSTANTS.MODAL_IDS.archivedDetails);
+                } else {
+                    showNotification("Could not find the selected archive.", "danger");
+                }
+            } catch (error) {
+                console.error("Error fetching archive details:", error);
+                showNotification("Failed to load archive details.", "danger");
+            }
+        }
+    });
+}
+
+async function handleDeleteTransaction(transactionId) {
+    const confirmed = await showConfirmModal('Delete Transaction?', 'Are you sure you want to delete this transaction?');
+    if (confirmed) {
+        currentBudget.transactions = currentBudget.transactions.filter(t => t.id !== transactionId);
+        recalculateSpentAmounts();
+        await saveBudget();
+        showNotification('Transaction deleted.', 'success');
+    }
+}
+
+// Kick off the application
+initializeEventListeners();
