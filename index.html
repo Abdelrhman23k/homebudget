@@ -15,7 +15,7 @@
         <h1 class="text-2xl sm:text-3xl font-bold text-center text-indigo-700 mb-2">
             Monthly Budget Tracker
         </h1>
-        <div id="userIdDisplay" class="text-center text-xs text-gray-400 mb-4 hidden">
+        <div id="userIdDisplay" class="text-center text-xs text-gray-400 mb-6 hidden">
             User ID: <span id="userIdValue" class="font-mono"></span>
         </div>
 
@@ -24,12 +24,11 @@
                 <label for="budgetSelector" class="block text-sm font-medium text-gray-700 mb-1">Current Budget:</label>
                 <select id="budgetSelector" class="form-input"></select>
             </div>
-            <div class="w-full sm:w-1/2 flex gap-2 justify-end pt-2 sm:pt-6">
+            <div class="w-full sm:w-1/2 flex gap-2 justify-start sm:justify-end sm:pt-6">
                 <button id="addBudgetButton" class="btn bg-green-500 hover:bg-green-600">New Budget</button>
                 <button id="deleteBudgetButton" class="btn bg-red-600 hover:bg-red-700">Delete</button>
             </div>
         </div>
-
 
         <div id="loadingSpinner" class="spinner"></div>
 
@@ -98,38 +97,15 @@
             <div id="tab-transactions" class="tab-panel">
                  <h2 class="text-2xl font-bold text-gray-800 mb-4">All Transactions</h2>
                  <div class="content-card grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div>
-                        <label for="filterCategory" class="block text-sm font-medium text-gray-700">Category</label>
-                        <select id="filterCategory" class="form-input mt-1"></select>
-                    </div>
-                    <div>
-                        <label for="filterPaymentMethod" class="block text-sm font-medium text-gray-700">Payment Method</label>
-                        <select id="filterPaymentMethod" class="form-input mt-1"></select>
-                    </div>
-                    <div>
-                        <label for="filterStartDate" class="block text-sm font-medium text-gray-700">Start Date</label>
-                        <input type="date" id="filterStartDate" class="form-input mt-1">
-                    </div>
-                    <div>
-                        <label for="filterEndDate" class="block text-sm font-medium text-gray-700">End Date</label>
-                        <input type="date" id="filterEndDate" class="form-input mt-1">
-                    </div>
-                    <div class="lg:col-span-4 flex justify-end">
-                        <button id="clearFiltersButton" class="btn bg-gray-600 hover:bg-gray-700 w-full sm:w-auto">Clear Filters</button>
-                    </div>
+                    <div><label for="filterCategory" class="block text-sm font-medium text-gray-700">Category</label><select id="filterCategory" class="form-input mt-1"></select></div>
+                    <div><label for="filterPaymentMethod" class="block text-sm font-medium text-gray-700">Payment Method</label><select id="filterPaymentMethod" class="form-input mt-1"></select></div>
+                    <div><label for="filterStartDate" class="block text-sm font-medium text-gray-700">Start Date</label><input type="date" id="filterStartDate" class="form-input mt-1"></div>
+                    <div><label for="filterEndDate" class="block text-sm font-medium text-gray-700">End Date</label><input type="date" id="filterEndDate" class="form-input mt-1"></div>
+                    <div class="lg:col-span-4 flex justify-end"><button id="clearFiltersButton" class="btn bg-gray-600 hover:bg-gray-700 w-full sm:w-auto">Clear Filters</button></div>
                 </div>
                 <div class="content-card mb-6">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-xl font-semibold">Spending Breakdown</h3>
-                        <select id="transactionPieChartGroup" class="form-input w-auto">
-                            <option value="category">By Category</option>
-                            <option value="type">By Type</option>
-                            <option value="subcategory">By Subcategory</option>
-                        </select>
-                    </div>
-                    <div class="relative h-80">
-                        <canvas id="transactionPieChart"></canvas>
-                    </div>
+                    <div class="flex justify-between items-center mb-2"><h3 class="text-xl font-semibold">Spending Breakdown</h3><select id="transactionPieChartGroup" class="form-input w-auto"><option value="category">By Category</option><option value="type">By Type</option><option value="subcategory">By Subcategory</option></select></div>
+                    <div class="relative h-80"><canvas id="transactionPieChart"></canvas></div>
                 </div>
                 <div id="transactionList" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
             </div>
@@ -141,20 +117,15 @@
 
             <div id="tab-chart" class="tab-panel">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Budget History Chart</h2>
-                <div id="chartContainer" class="relative h-[50vh] sm:h-96"></div>
+                <div id="chartContainer" class="relative h-[50vh] sm:h-96 content-card"></div>
             </div>
         </div>
     </div>
 
-    <button id="addExpenseFab" class="fab-base" title="Add New Expense">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-    </button>
-    <button id="voiceFab" class="fab-base" title="Start Voice Input">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
-    </button>
+    <button id="addExpenseFab" class="fab-base" title="Add New Expense"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+    <button id="voiceFab" class="fab-base" title="Start Voice Input"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg></button>
     
     <div id="inlineNotification" class="hidden"></div>
-
     <div id="categoryModalOverlay" class="custom-modal-overlay hidden"></div>
     <div id="transactionModalOverlay" class="custom-modal-overlay hidden"></div>
     <div id="archivedMonthDetailsModalOverlay" class="custom-modal-overlay hidden"></div>
