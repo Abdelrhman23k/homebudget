@@ -47,7 +47,11 @@ const defaultBudget = {
     name: "Default Budget",
     types: ['Needs', 'Wants', 'Savings'],
     paymentMethods: ['Cash', 'Credit Card', 'Bank Transfer'],
-    subcategories: { 'Coffee': ['diningOut', 'groceries'], 'Internet': ['utilities'], 'Pet Food': ['dogEssentials'] },
+    subcategories: {
+        'Coffee': ['diningOut', 'groceries'],
+        'Internet': ['utilities'],
+        'Pet Food': ['dogEssentials']
+    },
     categories: [
         { id: 'groceries', name: 'Groceries', allocated: 6000, spent: 0, type: 'Needs', color: '#EF4444', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.16"/></svg>` },
         { id: 'utilities', name: 'Utilities', allocated: 1500, spent: 0, type: 'Needs', color: '#F97316', icon: `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m13 10-3 5h4l-3 5"/></svg>` },
@@ -68,21 +72,17 @@ const defaultBudget = {
 
 const categoryMapping = { "groceries": ["groceries", "grocery", "بقالة", "سوبر ماركت"], "utilities": ["utilities", "bills", "فواتير", "كهرباء", "غاز"], "homeOwnership": ["home", "rent", "ايجار", "صيانة"], "fuel": ["fuel", "gas", "بنزين"], "healthcare": ["health", "pharmacy", "doctor", "صيدلية", "دكتور"], "dogEssentials": ["dog", "pet", "كلب"], "cigarettes": ["cigarettes", "smoke", "سجائر"], "gifts": ["gifts", "presents", "هدايا"], "sweetTooth": ["sweets", "dessert", "حلويات"], "subscriptions": ["subscriptions", "netflix", "spotify", "اشتراك"], "diningOut": ["dining", "restaurant", "مطعم", "اكل بره"], "miscWants": ["misc", "miscellaneous", "shopping", "entertainment", "متفرقات", "شوبينج"], "savings": ["savings", "توفير", "ادخار"] };
 
-// --- Firebase Initialization ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- Animation Utility ---
 const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } }); }, { threshold: 0.1 });
 
-// --- UI Helper Functions ---
 function showNotification(message, type = 'info', duration = 3000) { const el = document.getElementById('inlineNotification'); el.textContent = message; el.className = 'hidden'; void el.offsetWidth; el.classList.add(type, 'show'); setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.classList.add('hidden'), 300); }, duration); }
 function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
 async function showConfirmModal(title, message) { const modalId = CONSTANTS.MODAL_IDS.confirm; const modal = document.getElementById(modalId); modal.innerHTML = `<div class="custom-modal-content"><h2 class="custom-modal-title">${title}</h2><p class="text-center text-gray-600 mb-6">${message}</p><div class="custom-modal-buttons justify-center"><button class="custom-modal-button custom-modal-cancel">Cancel</button><button class="custom-modal-button custom-modal-confirm">Confirm</button></div></div>`; showModal(modalId); return new Promise(resolve => { modal.querySelector('.custom-modal-confirm').onclick = () => { hideModal(modalId); resolve(true); }; modal.querySelector('.custom-modal-cancel').onclick = () => { hideModal(modalId); resolve(false); }; }); }
 
-// --- CORRECTED: Populates the `dom` object at the right time ---
 function initializeDOMCache() {
     dom.loadingSpinner = document.getElementById('loadingSpinner');
     dom.mainContent = document.getElementById('mainContent');
@@ -95,22 +95,14 @@ function initializeDOMCache() {
     dom.budgetSelector = document.getElementById('budgetSelector');
 }
 
-// --- Authentication & App Initialization ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // ** THE FIX IS HERE **
-        // First, populate the dom cache now that the page is loaded.
         initializeDOMCache();
-
         userId = user.uid;
         isAuthReady = true;
         dom.userIdValue.textContent = userId;
         dom.userIdDisplay.classList.remove('hidden');
-        
-        // Second, attach all event listeners.
         initializeEventListeners();
-        
-        // Third, start the main application logic.
         await initializeAppState();
         setupSpeechRecognition();
     } else {
@@ -128,16 +120,12 @@ async function initializeAppState() {
     dom.mainContent.classList.add('hidden');
     dom.budgetControlPanel.classList.add('hidden');
     dom.loadingSpinner.classList.remove('hidden');
-    
     try {
         await migrateOldBudgetStructure();
-
         const budgetsColRef = collection(db, `artifacts/${appId}/users/${userId}/budgets`);
         const budgetsSnapshot = await getDocs(budgetsColRef);
-        
         allBudgets = {};
         budgetsSnapshot.forEach(doc => { allBudgets[doc.id] = doc.data().name || "Untitled Budget"; });
-
         if (Object.keys(allBudgets).length === 0) {
             activeBudgetId = await createNewBudget("My First Budget");
         } else {
@@ -149,11 +137,9 @@ async function initializeAppState() {
                 activeBudgetId = Object.keys(allBudgets)[0];
             }
         }
-        
         populateBudgetSelector();
         await setupBudgetListener(activeBudgetId);
         dom.budgetControlPanel.classList.remove('hidden');
-
     } catch (error) {
         console.error("Failed to initialize app state:", error);
         showNotification("A critical error occurred while loading your budget. Please refresh.", "danger", 10000);
@@ -188,18 +174,17 @@ async function setupBudgetListener(budgetId) {
     return new Promise((resolve, reject) => {
         unsubscribeBudget = onSnapshot(budgetDocRef, (docSnap) => {
             try {
-                dom.loadingSpinner.classList.add('hidden');
-                dom.mainContent.classList.remove('hidden');
                 if (docSnap.exists()) {
                     currentBudget = docSnap.data();
                     if (!currentBudget.transactions) currentBudget.transactions = [];
                     if (!currentBudget.types) currentBudget.types = defaultBudget.types;
+                    dom.loadingSpinner.classList.add('hidden');
+                    dom.mainContent.classList.remove('hidden');
                     renderUI();
                     resolve();
                 } else {
-                    showNotification(`Error: Budget not found. Reloading...`, "danger");
-                    initializeAppState();
-                    reject(new Error("Budget not found"));
+                    // ** FIX: Do NOT recursively call initializeAppState. Just reject. **
+                    reject(new Error(`Budget with ID ${budgetId} not found.`));
                 }
             } catch(error) {
                 console.error("Error rendering UI from snapshot:", error);
@@ -214,17 +199,7 @@ async function setupBudgetListener(budgetId) {
     });
 }
 
-async function saveBudget() {
-    if (!isAuthReady || !userId || !currentBudget || !activeBudgetId) return;
-    const budgetDocRef = doc(db, `artifacts/${appId}/users/${userId}/budgets/${activeBudgetId}`);
-    try {
-        await setDoc(budgetDocRef, currentBudget, { merge: true });
-    } catch (error) {
-        console.error("Error saving budget:", error);
-        showNotification("Error: Could not save changes to the cloud.", "danger");
-    }
-}
-
+async function saveBudget() { if (!isAuthReady || !userId || !currentBudget || !activeBudgetId) return; const budgetDocRef = doc(db, `artifacts/${appId}/users/${userId}/budgets/${activeBudgetId}`); try { await setDoc(budgetDocRef, currentBudget, { merge: true }); } catch (error) { console.error("Error saving budget:", error); showNotification("Error: Could not save changes to the cloud.", "danger"); } }
 function populateBudgetSelector() { dom.budgetSelector.innerHTML = ''; for (const id in allBudgets) { const option = document.createElement('option'); option.value = id; option.textContent = allBudgets[id]; dom.budgetSelector.appendChild(option); } if (activeBudgetId) { dom.budgetSelector.value = activeBudgetId; } document.getElementById('deleteBudgetButton').disabled = Object.keys(allBudgets).length <= 1; }
 async function setActiveBudgetId(budgetId) { activeBudgetId = budgetId; const prefsDocRef = doc(db, `artifacts/${appId}/users/${userId}/preferences/userPrefs`); try { await setDoc(prefsDocRef, { activeBudgetId: budgetId }); } catch (error) { console.error("Could not save user preference:", error); } }
 async function handleBudgetSwitch() { const newBudgetId = dom.budgetSelector.value; if (newBudgetId === activeBudgetId) return; dom.mainContent.classList.add('hidden'); dom.loadingSpinner.classList.remove('hidden'); await setActiveBudgetId(newBudgetId); await setupBudgetListener(newBudgetId); }
@@ -234,7 +209,7 @@ function renderUI() { if (!currentBudget) return; renderSummary(); renderCategor
 function renderSummary() { const totalSpent = (currentBudget.categories || []).reduce((sum, cat) => sum + (cat.spent || 0), 0); const overallRemaining = (currentBudget.income || 0) - totalSpent; const spentPercentage = (currentBudget.income || 0) > 0 ? (totalSpent / currentBudget.income) * 100 : 0; document.getElementById('totalBudgetValue').textContent = (currentBudget.income || 0).toFixed(2); document.getElementById('totalSpentValue').textContent = totalSpent.toFixed(2); const remainingEl = document.getElementById('overallRemainingValue'); remainingEl.textContent = overallRemaining.toFixed(2); remainingEl.className = `font-bold ${overallRemaining < 0 ? 'text-red-600' : 'text-green-600'}`; const overallProgressBar = document.getElementById('overallProgressBar'); requestAnimationFrame(() => { overallProgressBar.parentElement.style.transform = 'scaleX(1)'; overallProgressBar.style.width = `${Math.min(100, spentPercentage)}%`; }); }
 function renderCategories() { const container = document.getElementById('categoryDetailsContainer'); container.innerHTML = ''; const types = currentBudget.types || []; const categories = currentBudget.categories || []; types.forEach(type => { const categoriesOfType = categories.filter(c => c.type === type); if (categoriesOfType.length === 0) return; const section = document.createElement('div'); section.className = 'mb-6'; const title = document.createElement('h3'); title.className = 'text-xl sm:text-2xl font-bold text-gray-800 mb-4 pl-1 will-animate'; title.textContent = type; section.appendChild(title); observer.observe(title); const grid = document.createElement('div'); grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4'; section.appendChild(grid); categoriesOfType.forEach((category, index) => { const card = createCategoryCard(category); card.classList.add('will-animate'); card.style.transitionDelay = `${index * 50}ms`; grid.appendChild(card); observer.observe(card); }); container.appendChild(section); }); attachCategoryEventListeners(); updateTransactionCategoryDropdown(); }
 function createCategoryCard(category) { const card = document.createElement('div'); const spent = category.spent || 0; const allocated = category.allocated || 0; const remaining = allocated - spent; const percentage = allocated > 0 ? (spent / allocated) * 100 : 0; card.className = 'category-card'; card.style.borderColor = category.color || '#cccccc'; card.dataset.categoryId = category.id; card.innerHTML = `<div class="flex justify-between items-start w-full"><div class="flex items-center gap-2">${category.icon || defaultCategoryIcon}<h4 class="font-bold text-base sm:text-lg text-gray-900">${category.name}</h4></div><div class="flex gap-2"><button data-edit-id="${category.id}" class="edit-category-btn p-1 text-gray-400 hover:text-blue-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button data-delete-id="${category.id}" class="delete-category-btn p-1 text-gray-400 hover:text-red-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></div><div class="w-full"><p class="text-sm text-gray-500"><span class="font-semibold text-gray-700">${spent.toFixed(2)}</span> / ${allocated.toFixed(2)} EGP</p><div class="progress-bar-container"><div class="progress-bar-fill" style="width: ${Math.min(100, percentage)}%; background-color: ${category.color || '#cccccc'};"></div></div><p class="text-right text-xs sm:text-sm mt-1 font-medium ${remaining < 0 ? 'text-red-500' : 'text-gray-600'}">${remaining.toFixed(2)} EGP remaining</p></div>`; const progressBarContainer = card.querySelector('.progress-bar-container'); requestAnimationFrame(() => { progressBarContainer.style.transform = 'scaleX(1)'; }); return card; }
-function attachCategoryEventListeners() { document.getElementById('categoryDetailsContainer').addEventListener('click', (e) => { const card = e.target.closest('.category-card'); if (!card) return; if (e.target.closest('.edit-category-btn')) { e.stopPropagation(); editingCategoryId = card.dataset.categoryId; const category = currentBudget.categories.find(c => c.id === editingCategoryId); if (category) openCategoryModal(category); } else if (e.target.closest('.delete-category-btn')) { e.stopPropagation(); const categoryIdToDelete = card.dataset.categoryId; handleDeleteCategory(categoryIdToDelete); } else { const categoryId = card.dataset.categoryId; dom.tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === 'transactions')); dom.tabPanels.forEach(p => p.classList.toggle('active', p.id === 'tab-transactions')); document.getElementById('filterCategory').value = categoryId; renderTransactionList(); } }); }
+function attachCategoryEventListeners() { document.getElementById('categoryDetailsContainer').addEventListener('click', (e) => { const card = e.target.closest('.category-card'); if (!card) return; if (e.target.closest('.edit-category-btn')) { e.stopPropagation(); editingCategoryId = card.dataset.categoryId; const category = currentBudget.categories.find(c => c.id === editingCategoryId); if (category) openCategoryModal(category); } else if (e.target.closest('.delete-category-btn')) { e.stopPropagation(); const categoryIdToDelete = card.dataset.categoryId; handleDeleteCategory(categoryIdToDelete); } else { dom.tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === 'transactions')); dom.tabPanels.forEach(p => p.classList.toggle('active', p.id === 'tab-transactions')); document.getElementById('filterCategory').value = card.dataset.categoryId; renderTransactionList(); } }); }
 function updateTransactionCategoryDropdown() { const categorySelect = document.getElementById('modalTransactionCategory'); if(categorySelect) { const currentValue = categorySelect.value; categorySelect.innerHTML = '<option value="">Select Category</option>'; (currentBudget.categories || []).forEach(cat => { const option = document.createElement('option'); option.value = cat.id; option.textContent = cat.name; categorySelect.appendChild(option); }); categorySelect.value = currentValue; } }
 async function handleDeleteCategory(categoryId) { const category = currentBudget.categories.find(c => c.id === categoryId); if (!category) return; const confirmed = await showConfirmModal('Delete Category?', `This will also delete all associated transactions.`); if (confirmed) { currentBudget.categories = currentBudget.categories.filter(c => c.id !== categoryId); currentBudget.transactions = (currentBudget.transactions || []).filter(t => t.categoryId !== categoryId); recalculateSpentAmounts(); await saveBudget(); showNotification(`Category "${category.name}" deleted.`, 'success'); } }
 function openCategoryModal(category = null) { editingCategoryId = category ? category.id : null; const modalId = CONSTANTS.MODAL_IDS.category; const modal = document.getElementById(modalId); let typeOptions = ''; (currentBudget.types || []).forEach(type => { const selected = category && category.type === type ? 'selected' : ''; typeOptions += `<option value="${type}" ${selected}>${type}</option>`; }); modal.innerHTML = `<div class="custom-modal-content"><h2 class="custom-modal-title">${category ? 'Edit Category' : 'Add New Category'}</h2><form id="categoryForm"><div class="mb-4"><label for="modalCategoryName" class="block text-gray-700 text-sm font-bold mb-2">Category Name:</label><input type="text" id="modalCategoryName" class="form-input" value="${category ? category.name : ''}" required /></div><div class="mb-4"><label for="modalAllocatedAmount" class="block text-gray-700 text-sm font-bold mb-2">Allocated Amount (EGP):</label><input type="number" id="modalAllocatedAmount" class="form-input" min="0" step="0.01" value="${category ? category.allocated : ''}" required /></div><div class="mb-6"><label for="modalCategoryType" class="block text-gray-700 text-sm font-bold mb-2">Category Type:</label><select id="modalCategoryType" class="form-input">${typeOptions}</select></div><div class="custom-modal-buttons"><button type="button" class="custom-modal-button custom-modal-cancel">Cancel</button><button type="submit" class="custom-modal-button custom-modal-primary-button">${category ? 'Save Changes' : 'Add Category'}</button></div></form></div>`; showModal(modalId); modal.querySelector('form').onsubmit = handleCategoryFormSubmit; modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId); }
