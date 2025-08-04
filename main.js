@@ -298,10 +298,6 @@ function createCategoryCard(category) {
     return card;
 }
 
-// ... (The rest of the functions from your original script will go here) ...
-// The following functions are copied from the original script without modification,
-// except for using constants and improved error handling where applicable.
-
 function attachCategoryEventListeners() {
     document.getElementById('categoryDetailsContainer').addEventListener('click', (e) => {
         const card = e.target.closest('.category-card');
@@ -430,7 +426,6 @@ function openTransactionModal(transaction = null) {
     });
     
     let subcategoryOptions = '<option value="">None</option>';
-    // Subcategories are now dynamically populated based on selected category
     
     modal.innerHTML = `
          <div class="custom-modal-content">
@@ -614,33 +609,53 @@ function renderTransactionList() {
     renderTransactionPieChart(filteredTransactions);
 }
 
+// --- THIS IS THE CORRECTED FUNCTION ---
 function populateTransactionFilters() {
     const filterCategory = document.getElementById('filterCategory');
     const filterPaymentMethod = document.getElementById('filterPaymentMethod');
 
     if (!filterCategory || !filterPaymentMethod) return;
 
-    // Populate Category Filter
-    const currentCategory = filterCategory.value;
+    // --- Category Filter ---
+    // Save current selection before repopulating
+    let currentCategoryValue = filterCategory.value;
+    
+    // Repopulate the dropdown
     filterCategory.innerHTML = '<option value="all">All Categories</option>';
+    const validCategoryOptions = ['all']; // Keep a list of valid option values
     currentBudget.categories.forEach(cat => {
         const option = document.createElement('option');
         option.value = cat.id;
         option.textContent = cat.name;
         filterCategory.appendChild(option);
+        validCategoryOptions.push(cat.id);
     });
-    filterCategory.value = currentCategory;
 
-    // Populate Payment Method Filter
-    const currentPayment = filterPaymentMethod.value;
+    // Restore the selection only if it's still a valid option, otherwise default to 'all'
+    if (validCategoryOptions.includes(currentCategoryValue)) {
+        filterCategory.value = currentCategoryValue;
+    } else {
+        filterCategory.value = 'all';
+    }
+
+    // --- Payment Method Filter (Same Logic) ---
+    let currentPaymentValue = filterPaymentMethod.value;
+
     filterPaymentMethod.innerHTML = '<option value="all">All Payment Methods</option>';
+    const validPaymentOptions = ['all'];
     currentBudget.paymentMethods.forEach(pm => {
         const option = document.createElement('option');
         option.value = pm;
         option.textContent = pm;
         filterPaymentMethod.appendChild(option);
+        validPaymentOptions.push(pm);
     });
-    filterPaymentMethod.value = currentPayment;
+    
+    if (validPaymentOptions.includes(currentPaymentValue)) {
+        filterPaymentMethod.value = currentPaymentValue;
+    } else {
+        filterPaymentMethod.value = 'all';
+    }
 }
 
 async function renderHistoryList() {
@@ -717,7 +732,6 @@ function renderArchivedMonthDetails(archiveId, data) {
         }).join('') || '<p class="text-gray-500 text-center">No transactions for this month.</p>'}</ul>
     `;
     
-    // This is a temporary context for the modal's pie chart.
     const renderPie = () => renderPieChart(
         'archivePieChart', 
         data,
@@ -728,7 +742,6 @@ function renderArchivedMonthDetails(archiveId, data) {
 
     modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId);
 }
-
 
 // --- Voice Command Functionality ---
 function setupSpeechRecognition() {
@@ -861,13 +874,10 @@ function renderPieChart(canvasId, budgetData, groupBy) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
 
-    // A bit of a hack to manage multiple pie charts
     let chartInstance;
     if (canvasId === 'transactionPieChart') {
         if (transactionPieChart) transactionPieChart.destroy();
         chartInstance = transactionPieChart;
-    } else {
-        // Assume a temporary chart, no need to destroy a global instance
     }
 
     const transactions = budgetData.transactions || [];
@@ -879,7 +889,7 @@ function renderPieChart(canvasId, budgetData, groupBy) {
     const categories = budgetData.categories || [];
 
     transactions.forEach(t => {
-        let key, color;
+        let key;
         const category = categories.find(c => c.id === t.categoryId);
         if (groupBy === 'category') {
             key = category?.name || 'Unknown';
@@ -928,7 +938,6 @@ function renderTransactionPieChart(filteredTransactions) {
     };
     renderPieChart('transactionPieChart', budgetData, groupBy);
 }
-
 
 function populateForecastDropdown() {
     const select = document.getElementById('forecastSelect');
@@ -979,7 +988,6 @@ function calculateForecast() {
     const currentMonth = now.getMonth();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const dayOfMonth = now.getDate();
-    // Ensure daysRemaining is at least 1 to avoid division by zero
     const daysRemaining = Math.max(1, daysInMonth - dayOfMonth);
 
     let allocatedAmount = 0;
@@ -1011,7 +1019,6 @@ function calculateForecast() {
     
     const recommendedDailySpending = (allocatedAmount - spentAmount) / daysRemaining;
     
-    // Chart Data
     const labels = Array.from({ length: daysInMonth }, (_, i) => new Date(currentYear, currentMonth, i + 1));
     const cumulativeSpendingData = [];
     let dailyTotal = 0;
@@ -1041,12 +1048,11 @@ function calculateForecast() {
         </div>
     `;
     
-    // Overspending Warning
-    const projectedEndAmount = forecastData[daysInMonth - 1].y;
+    const projectedEndAmount = forecastData.length > 0 ? forecastData[daysInMonth - 1].y : spentAmount;
     if (allocatedAmount > 0 && projectedEndAmount > allocatedAmount) {
         let overspendDay = dayOfMonth;
         for (let i = dayOfMonth - 1; i < daysInMonth; i++) {
-            if (forecastData[i].y > allocatedAmount) {
+            if (forecastData[i]?.y > allocatedAmount) {
                 overspendDay = i + 1;
                 break;
             }
@@ -1061,7 +1067,7 @@ function calculateForecast() {
     if (forecastChart) forecastChart.destroy();
     
     const spentLineData = cumulativeSpendingData.map(d => ({x: d.x, y: d.y}));
-    if (spentLineData.length > 0) {
+    if (spentLineData.length > 0 && forecastData[dayOfMonth - 1]) {
         spentLineData.push({x: forecastData[dayOfMonth-1].x, y: forecastData[dayOfMonth-1].y});
     }
 
@@ -1072,7 +1078,7 @@ function calculateForecast() {
                 {
                     label: 'Spent',
                     data: spentLineData,
-                    borderColor: '#10B981', // Green
+                    borderColor: '#10B981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     fill: 'start',
                     tension: 0.2,
@@ -1080,8 +1086,8 @@ function calculateForecast() {
                 },
                 {
                     label: 'Forecast',
-                    data: forecastData.slice(dayOfMonth - 1),
-                    borderColor: '#EF4444', // Red
+                    data: forecastData.slice(dayOfMonth > 0 ? dayOfMonth - 1 : 0),
+                    borderColor: '#EF4444',
                     borderDash: [5, 5],
                     fill: false,
                     tension: 0.2,
@@ -1094,22 +1100,14 @@ function calculateForecast() {
             scales: {
                 x: {
                     type: 'time',
-                    time: {
-                        unit: 'day',
-                        displayFormats: { day: 'd MMM' }
-                    },
+                    time: { unit: 'day', displayFormats: { day: 'd MMM' } },
                     ticks: { major: { enabled: true } },
                     grid: { display: false }
                 },
                 y: {
                     beginAtZero: true,
                     suggestedMax: allocatedAmount * 1.1,
-                    ticks: {
-                        callback: function(value) {
-                            if (value >= 1000) return value / 1000 + 'K';
-                            return value;
-                        }
-                    }
+                    ticks: { callback: value => (value >= 1000 ? value / 1000 + 'K' : value) }
                 }
             },
             plugins: { 
@@ -1118,20 +1116,13 @@ function calculateForecast() {
                 annotation: {
                     annotations: {
                         todayLine: {
-                            type: 'line',
-                            scaleID: 'x',
-                            value: now.getTime(),
-                            borderColor: 'rgb(59, 130, 246)',
-                            borderWidth: 2,
+                            type: 'line', scaleID: 'x', value: now.getTime(),
+                            borderColor: 'rgb(59, 130, 246)', borderWidth: 2,
                             label: { content: 'Today', enabled: true, position: 'start' }
                         },
                         limitLine: {
-                            type: 'line',
-                            scaleID: 'y',
-                            value: allocatedAmount,
-                            borderColor: '#6b7280',
-                            borderWidth: 2,
-                            borderDash: [6, 6],
+                            type: 'line', scaleID: 'y', value: allocatedAmount,
+                            borderColor: '#6b7280', borderWidth: 2, borderDash: [6, 6],
                             label: { content: 'Limit', enabled: true, position: 'end' }
                         }
                     }
@@ -1142,7 +1133,7 @@ function calculateForecast() {
 }
 
 // --- Management Modals (Refactored) ---
-function openManagementModal({ modalId, title, items, placeholder, onAdd, onDelete }) {
+function openManagementModal({ modalId, title, itemsKey, placeholder, onAdd, onDelete }) {
     const modal = document.getElementById(modalId);
     
     const renderItems = (currentItems) => {
@@ -1168,12 +1159,13 @@ function openManagementModal({ modalId, title, items, placeholder, onAdd, onDele
                 </div>
             </div>`;
         
-        modal.querySelector('#addItemForm').onsubmit = (e) => {
+        modal.querySelector('#addItemForm').onsubmit = async (e) => {
             e.preventDefault();
             const newItemInput = document.getElementById('newItemName');
             const newItemName = newItemInput.value.trim();
             if (newItemName && !currentItems.includes(newItemName)) {
-                onAdd(newItemName).then(() => renderItems(currentBudget[items] || currentBudget.paymentMethods)); // Re-render with updated list
+                await onAdd(newItemName);
+                renderItems(currentBudget[itemsKey]);
             }
             newItemInput.value = '';
         };
@@ -1182,7 +1174,7 @@ function openManagementModal({ modalId, title, items, placeholder, onAdd, onDele
             btn.onclick = async (e) => {
                 const itemName = e.currentTarget.dataset.itemName;
                 if (await onDelete(itemName)) {
-                    renderItems(currentBudget[items] || currentBudget.paymentMethods); // Re-render
+                    renderItems(currentBudget[itemsKey]);
                 }
             };
         });
@@ -1190,7 +1182,7 @@ function openManagementModal({ modalId, title, items, placeholder, onAdd, onDele
         modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId);
     };
 
-    renderItems(currentBudget[items] || currentBudget.paymentMethods);
+    renderItems(currentBudget[itemsKey]);
     showModal(modalId);
 }
 
@@ -1253,7 +1245,7 @@ function initializeEventListeners() {
         openManagementModal({
             modalId: CONSTANTS.MODAL_IDS.manageItems,
             title: "Manage Category Types",
-            items: "types",
+            itemsKey: "types",
             placeholder: "New Type Name",
             onAdd: async (name) => {
                 currentBudget.types.push(name);
@@ -1281,7 +1273,7 @@ function initializeEventListeners() {
         openManagementModal({
             modalId: CONSTANTS.MODAL_IDS.manageItems,
             title: "Manage Payment Methods",
-            items: "paymentMethods",
+            itemsKey: "paymentMethods",
             placeholder: "New Payment Method",
             onAdd: async (name) => {
                 currentBudget.paymentMethods.push(name);
@@ -1306,7 +1298,7 @@ function initializeEventListeners() {
         const modal = document.getElementById(modalId);
         
         const renderSubcategories = () => {
-            const subcategoriesList = Object.keys(currentBudget.subcategories).map(sub => `
+            const subcategoriesList = Object.keys(currentBudget.subcategories).sort().map(sub => `
                 <li class="bg-gray-100 p-3 rounded-md">
                     <div class="flex justify-between items-center mb-2">
                        <span class="font-semibold">${sub}</span>
