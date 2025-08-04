@@ -36,18 +36,8 @@ let lastAddedTransactionId = null;
 let activeBudgetId = null;
 let allBudgets = {}; // Stores { id: name } for all user budgets
 
-// --- DOM Element Cache ---
-const dom = {
-    loadingSpinner: document.getElementById('loadingSpinner'),
-    mainContent: document.getElementById('mainContent'),
-    userIdDisplay: document.getElementById('userIdDisplay'),
-    userIdValue: document.getElementById('userIdValue'),
-    voiceFab: document.getElementById('voiceFab'),
-    tabs: document.querySelectorAll('.tab-button'),
-    tabPanels: document.querySelectorAll('.tab-panel'),
-    budgetControlPanel: document.getElementById('budgetControlPanel'),
-    budgetSelector: document.getElementById('budgetSelector'),
-};
+// --- DOM Element Cache (Initialized later) ---
+let dom = {};
 
 // --- Default Data Structures ---
 const defaultCategoryIcon = `<svg class="category-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.432 0l6.568-6.568a2.426 2.426 0 0 0 0-3.432L12.586 2.586z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>`;
@@ -78,24 +68,49 @@ const defaultBudget = {
 
 const categoryMapping = { "groceries": ["groceries", "grocery", "بقالة", "سوبر ماركت"], "utilities": ["utilities", "bills", "فواتير", "كهرباء", "غاز"], "homeOwnership": ["home", "rent", "ايجار", "صيانة"], "fuel": ["fuel", "gas", "بنزين"], "healthcare": ["health", "pharmacy", "doctor", "صيدلية", "دكتور"], "dogEssentials": ["dog", "pet", "كلب"], "cigarettes": ["cigarettes", "smoke", "سجائر"], "gifts": ["gifts", "presents", "هدايا"], "sweetTooth": ["sweets", "dessert", "حلويات"], "subscriptions": ["subscriptions", "netflix", "spotify", "اشتراك"], "diningOut": ["dining", "restaurant", "مطعم", "اكل بره"], "miscWants": ["misc", "miscellaneous", "shopping", "entertainment", "متفرقات", "شوبينج"], "savings": ["savings", "توفير", "ادخار"] };
 
+// --- Firebase Initialization ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// --- Animation Utility ---
 const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } }); }, { threshold: 0.1 });
 
+// --- UI Helper Functions ---
 function showNotification(message, type = 'info', duration = 3000) { const el = document.getElementById('inlineNotification'); el.textContent = message; el.className = 'hidden'; void el.offsetWidth; el.classList.add(type, 'show'); setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.classList.add('hidden'), 300); }, duration); }
 function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
 async function showConfirmModal(title, message) { const modalId = CONSTANTS.MODAL_IDS.confirm; const modal = document.getElementById(modalId); modal.innerHTML = `<div class="custom-modal-content"><h2 class="custom-modal-title">${title}</h2><p class="text-center text-gray-600 mb-6">${message}</p><div class="custom-modal-buttons justify-center"><button class="custom-modal-button custom-modal-cancel">Cancel</button><button class="custom-modal-button custom-modal-confirm">Confirm</button></div></div>`; showModal(modalId); return new Promise(resolve => { modal.querySelector('.custom-modal-confirm').onclick = () => { hideModal(modalId); resolve(true); }; modal.querySelector('.custom-modal-cancel').onclick = () => { hideModal(modalId); resolve(false); }; }); }
 
+// --- CORRECTED: Populates the `dom` object at the right time ---
+function initializeDOMCache() {
+    dom.loadingSpinner = document.getElementById('loadingSpinner');
+    dom.mainContent = document.getElementById('mainContent');
+    dom.userIdDisplay = document.getElementById('userIdDisplay');
+    dom.userIdValue = document.getElementById('userIdValue');
+    dom.voiceFab = document.getElementById('voiceFab');
+    dom.tabs = document.querySelectorAll('.tab-button');
+    dom.tabPanels = document.querySelectorAll('.tab-panel');
+    dom.budgetControlPanel = document.getElementById('budgetControlPanel');
+    dom.budgetSelector = document.getElementById('budgetSelector');
+}
+
+// --- Authentication & App Initialization ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        // ** THE FIX IS HERE **
+        // First, populate the dom cache now that the page is loaded.
+        initializeDOMCache();
+
         userId = user.uid;
         isAuthReady = true;
         dom.userIdValue.textContent = userId;
         dom.userIdDisplay.classList.remove('hidden');
+        
+        // Second, attach all event listeners.
         initializeEventListeners();
+        
+        // Third, start the main application logic.
         await initializeAppState();
         setupSpeechRecognition();
     } else {
@@ -113,25 +128,37 @@ async function initializeAppState() {
     dom.mainContent.classList.add('hidden');
     dom.budgetControlPanel.classList.add('hidden');
     dom.loadingSpinner.classList.remove('hidden');
-    await migrateOldBudgetStructure();
-    const budgetsColRef = collection(db, `artifacts/${appId}/users/${userId}/budgets`);
-    const budgetsSnapshot = await getDocs(budgetsColRef);
-    allBudgets = {};
-    budgetsSnapshot.forEach(doc => { allBudgets[doc.id] = doc.data().name || "Untitled Budget"; });
-    if (Object.keys(allBudgets).length === 0) {
-        activeBudgetId = await createNewBudget("My First Budget");
-    } else {
-        const prefsDocRef = doc(db, `artifacts/${appId}/users/${userId}/preferences/userPrefs`);
-        const prefsDoc = await getDoc(prefsDocRef);
-        if (prefsDoc.exists() && allBudgets[prefsDoc.data().activeBudgetId]) {
-            activeBudgetId = prefsDoc.data().activeBudgetId;
+    
+    try {
+        await migrateOldBudgetStructure();
+
+        const budgetsColRef = collection(db, `artifacts/${appId}/users/${userId}/budgets`);
+        const budgetsSnapshot = await getDocs(budgetsColRef);
+        
+        allBudgets = {};
+        budgetsSnapshot.forEach(doc => { allBudgets[doc.id] = doc.data().name || "Untitled Budget"; });
+
+        if (Object.keys(allBudgets).length === 0) {
+            activeBudgetId = await createNewBudget("My First Budget");
         } else {
-            activeBudgetId = Object.keys(allBudgets)[0];
+            const prefsDocRef = doc(db, `artifacts/${appId}/users/${userId}/preferences/userPrefs`);
+            const prefsDoc = await getDoc(prefsDocRef);
+            if (prefsDoc.exists() && allBudgets[prefsDoc.data().activeBudgetId]) {
+                activeBudgetId = prefsDoc.data().activeBudgetId;
+            } else {
+                activeBudgetId = Object.keys(allBudgets)[0];
+            }
         }
+        
+        populateBudgetSelector();
+        await setupBudgetListener(activeBudgetId);
+        dom.budgetControlPanel.classList.remove('hidden');
+
+    } catch (error) {
+        console.error("Failed to initialize app state:", error);
+        showNotification("A critical error occurred while loading your budget. Please refresh.", "danger", 10000);
+        dom.loadingSpinner.classList.add('hidden');
     }
-    populateBudgetSelector();
-    await setupBudgetListener(activeBudgetId);
-    dom.budgetControlPanel.classList.remove('hidden');
 }
 
 async function migrateOldBudgetStructure() {
@@ -207,7 +234,7 @@ function renderUI() { if (!currentBudget) return; renderSummary(); renderCategor
 function renderSummary() { const totalSpent = (currentBudget.categories || []).reduce((sum, cat) => sum + (cat.spent || 0), 0); const overallRemaining = (currentBudget.income || 0) - totalSpent; const spentPercentage = (currentBudget.income || 0) > 0 ? (totalSpent / currentBudget.income) * 100 : 0; document.getElementById('totalBudgetValue').textContent = (currentBudget.income || 0).toFixed(2); document.getElementById('totalSpentValue').textContent = totalSpent.toFixed(2); const remainingEl = document.getElementById('overallRemainingValue'); remainingEl.textContent = overallRemaining.toFixed(2); remainingEl.className = `font-bold ${overallRemaining < 0 ? 'text-red-600' : 'text-green-600'}`; const overallProgressBar = document.getElementById('overallProgressBar'); requestAnimationFrame(() => { overallProgressBar.parentElement.style.transform = 'scaleX(1)'; overallProgressBar.style.width = `${Math.min(100, spentPercentage)}%`; }); }
 function renderCategories() { const container = document.getElementById('categoryDetailsContainer'); container.innerHTML = ''; const types = currentBudget.types || []; const categories = currentBudget.categories || []; types.forEach(type => { const categoriesOfType = categories.filter(c => c.type === type); if (categoriesOfType.length === 0) return; const section = document.createElement('div'); section.className = 'mb-6'; const title = document.createElement('h3'); title.className = 'text-xl sm:text-2xl font-bold text-gray-800 mb-4 pl-1 will-animate'; title.textContent = type; section.appendChild(title); observer.observe(title); const grid = document.createElement('div'); grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4'; section.appendChild(grid); categoriesOfType.forEach((category, index) => { const card = createCategoryCard(category); card.classList.add('will-animate'); card.style.transitionDelay = `${index * 50}ms`; grid.appendChild(card); observer.observe(card); }); container.appendChild(section); }); attachCategoryEventListeners(); updateTransactionCategoryDropdown(); }
 function createCategoryCard(category) { const card = document.createElement('div'); const spent = category.spent || 0; const allocated = category.allocated || 0; const remaining = allocated - spent; const percentage = allocated > 0 ? (spent / allocated) * 100 : 0; card.className = 'category-card'; card.style.borderColor = category.color || '#cccccc'; card.dataset.categoryId = category.id; card.innerHTML = `<div class="flex justify-between items-start w-full"><div class="flex items-center gap-2">${category.icon || defaultCategoryIcon}<h4 class="font-bold text-base sm:text-lg text-gray-900">${category.name}</h4></div><div class="flex gap-2"><button data-edit-id="${category.id}" class="edit-category-btn p-1 text-gray-400 hover:text-blue-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button data-delete-id="${category.id}" class="delete-category-btn p-1 text-gray-400 hover:text-red-600 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></div><div class="w-full"><p class="text-sm text-gray-500"><span class="font-semibold text-gray-700">${spent.toFixed(2)}</span> / ${allocated.toFixed(2)} EGP</p><div class="progress-bar-container"><div class="progress-bar-fill" style="width: ${Math.min(100, percentage)}%; background-color: ${category.color || '#cccccc'};"></div></div><p class="text-right text-xs sm:text-sm mt-1 font-medium ${remaining < 0 ? 'text-red-500' : 'text-gray-600'}">${remaining.toFixed(2)} EGP remaining</p></div>`; const progressBarContainer = card.querySelector('.progress-bar-container'); requestAnimationFrame(() => { progressBarContainer.style.transform = 'scaleX(1)'; }); return card; }
-function attachCategoryEventListeners() { document.getElementById('categoryDetailsContainer').addEventListener('click', (e) => { const card = e.target.closest('.category-card'); if (!card) return; if (e.target.closest('.edit-category-btn')) { e.stopPropagation(); editingCategoryId = card.dataset.categoryId; const category = currentBudget.categories.find(c => c.id === editingCategoryId); if (category) openCategoryModal(category); } else if (e.target.closest('.delete-category-btn')) { e.stopPropagation(); const categoryIdToDelete = card.dataset.categoryId; handleDeleteCategory(categoryIdToDelete); } else { const categoryId = card.dataset.categoryId; document.querySelector('[data-tab="transactions"]').click(); document.getElementById('filterCategory').value = categoryId; renderTransactionList(); } }); }
+function attachCategoryEventListeners() { document.getElementById('categoryDetailsContainer').addEventListener('click', (e) => { const card = e.target.closest('.category-card'); if (!card) return; if (e.target.closest('.edit-category-btn')) { e.stopPropagation(); editingCategoryId = card.dataset.categoryId; const category = currentBudget.categories.find(c => c.id === editingCategoryId); if (category) openCategoryModal(category); } else if (e.target.closest('.delete-category-btn')) { e.stopPropagation(); const categoryIdToDelete = card.dataset.categoryId; handleDeleteCategory(categoryIdToDelete); } else { const categoryId = card.dataset.categoryId; dom.tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === 'transactions')); dom.tabPanels.forEach(p => p.classList.toggle('active', p.id === 'tab-transactions')); document.getElementById('filterCategory').value = categoryId; renderTransactionList(); } }); }
 function updateTransactionCategoryDropdown() { const categorySelect = document.getElementById('modalTransactionCategory'); if(categorySelect) { const currentValue = categorySelect.value; categorySelect.innerHTML = '<option value="">Select Category</option>'; (currentBudget.categories || []).forEach(cat => { const option = document.createElement('option'); option.value = cat.id; option.textContent = cat.name; categorySelect.appendChild(option); }); categorySelect.value = currentValue; } }
 async function handleDeleteCategory(categoryId) { const category = currentBudget.categories.find(c => c.id === categoryId); if (!category) return; const confirmed = await showConfirmModal('Delete Category?', `This will also delete all associated transactions.`); if (confirmed) { currentBudget.categories = currentBudget.categories.filter(c => c.id !== categoryId); currentBudget.transactions = (currentBudget.transactions || []).filter(t => t.categoryId !== categoryId); recalculateSpentAmounts(); await saveBudget(); showNotification(`Category "${category.name}" deleted.`, 'success'); } }
 function openCategoryModal(category = null) { editingCategoryId = category ? category.id : null; const modalId = CONSTANTS.MODAL_IDS.category; const modal = document.getElementById(modalId); let typeOptions = ''; (currentBudget.types || []).forEach(type => { const selected = category && category.type === type ? 'selected' : ''; typeOptions += `<option value="${type}" ${selected}>${type}</option>`; }); modal.innerHTML = `<div class="custom-modal-content"><h2 class="custom-modal-title">${category ? 'Edit Category' : 'Add New Category'}</h2><form id="categoryForm"><div class="mb-4"><label for="modalCategoryName" class="block text-gray-700 text-sm font-bold mb-2">Category Name:</label><input type="text" id="modalCategoryName" class="form-input" value="${category ? category.name : ''}" required /></div><div class="mb-4"><label for="modalAllocatedAmount" class="block text-gray-700 text-sm font-bold mb-2">Allocated Amount (EGP):</label><input type="number" id="modalAllocatedAmount" class="form-input" min="0" step="0.01" value="${category ? category.allocated : ''}" required /></div><div class="mb-6"><label for="modalCategoryType" class="block text-gray-700 text-sm font-bold mb-2">Category Type:</label><select id="modalCategoryType" class="form-input">${typeOptions}</select></div><div class="custom-modal-buttons"><button type="button" class="custom-modal-button custom-modal-cancel">Cancel</button><button type="submit" class="custom-modal-button custom-modal-primary-button">${category ? 'Save Changes' : 'Add Category'}</button></div></form></div>`; showModal(modalId); modal.querySelector('form').onsubmit = handleCategoryFormSubmit; modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId); }
@@ -241,8 +268,8 @@ function initializeEventListeners() {
     document.getElementById('addExpenseFab').onclick = () => openTransactionModal();
     dom.voiceFab.onclick = () => { if (recognition) { try { recognition.start(); } catch (e) { console.error("Could not start recognition:", e); } }};
     document.getElementById('archiveMonthButton').onclick = async () => { const confirmed = await showConfirmModal('Archive Month?', 'This will save a snapshot and reset spending for the new month.'); if (confirmed) { const now = new Date(); const archiveId = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; const archiveDocRef = doc(db, `artifacts/${appId}/users/${userId}/budgets/${activeBudgetId}/archive/${archiveId}`); try { await setDoc(archiveDocRef, currentBudget); currentBudget.transactions = []; currentBudget.categories.forEach(c => c.spent = 0); await saveBudget(); showNotification(`Budget for ${archiveId} has been archived.`, 'success'); } catch (error) { console.error("Error archiving month:", error); showNotification("Archiving failed.", "danger"); } } };
-    document.getElementById('manageTypesButton').onclick = () => openManagementModal({ modalId: CONSTANTS.MODAL_IDS.manageItems, title: "Manage Category Types", itemsKey: "types", placeholder: "New Type Name", onAdd: async (name) => { currentBudget.types.push(name); await saveBudget(); }, onDelete: async (name) => { const categoriesUsingType = currentBudget.categories.filter(c => c.type === name); const confirmed = await showConfirmModal('Delete Type?', `This will also delete ${categoriesUsingType.length} associated categories and all their transactions.`); if (confirmed) { currentBudget.types = currentBudget.types.filter(t => t !== name); const categoryIdsToDelete = categoriesUsingType.map(c => c.id); currentBudget.categories = currentBudget.categories.filter(c => c.type !== name); currentBudget.transactions = currentBudget.transactions.filter(t => !categoryIdsToDelete.includes(t.categoryId)); await saveBudget(); } return confirmed; } });
-    document.getElementById('managePaymentsButton').onclick = () => openManagementModal({ modalId: CONSTANTS.MODAL_IDS.manageItems, title: "Manage Payment Methods", itemsKey: "paymentMethods", placeholder: "New Payment Method", onAdd: async (name) => { currentBudget.paymentMethods.push(name); await saveBudget(); }, onDelete: async (name) => { const confirmed = await showConfirmModal('Delete Payment Method?', `This will not affect existing transactions.`); if (confirmed) { currentBudget.paymentMethods = currentBudget.paymentMethods.filter(pm => pm !== name); await saveBudget(); } return confirmed; } });
+    document.getElementById('manageTypesButton').onclick = () => openManagementModal({ modalId: CONSTANTS.MODAL_IDS.manageItems, title: "Manage Category Types", itemsKey: "types", placeholder: "New Type Name", onAdd: async (name) => { if(!currentBudget.types) currentBudget.types = []; currentBudget.types.push(name); await saveBudget(); }, onDelete: async (name) => { const categoriesUsingType = currentBudget.categories.filter(c => c.type === name); const confirmed = await showConfirmModal('Delete Type?', `This will also delete ${categoriesUsingType.length} associated categories and all their transactions.`); if (confirmed) { currentBudget.types = currentBudget.types.filter(t => t !== name); const categoryIdsToDelete = categoriesUsingType.map(c => c.id); currentBudget.categories = currentBudget.categories.filter(c => c.type !== name); currentBudget.transactions = currentBudget.transactions.filter(t => !categoryIdsToDelete.includes(t.categoryId)); await saveBudget(); } return confirmed; } });
+    document.getElementById('managePaymentsButton').onclick = () => openManagementModal({ modalId: CONSTANTS.MODAL_IDS.manageItems, title: "Manage Payment Methods", itemsKey: "paymentMethods", placeholder: "New Payment Method", onAdd: async (name) => { if(!currentBudget.paymentMethods) currentBudget.paymentMethods = []; currentBudget.paymentMethods.push(name); await saveBudget(); }, onDelete: async (name) => { const confirmed = await showConfirmModal('Delete Payment Method?', `This will not affect existing transactions.`); if (confirmed) { currentBudget.paymentMethods = currentBudget.paymentMethods.filter(pm => pm !== name); await saveBudget(); } return confirmed; } });
     document.getElementById('manageSubcategoriesButton').onclick = () => { const modalId = CONSTANTS.MODAL_IDS.manageSubcategories; const modal = document.getElementById(modalId); const renderSubcategories = () => { const subcategoriesList = Object.keys(currentBudget.subcategories || {}).sort().map(sub => `<li class="bg-gray-100 p-3 rounded-md"><div class="flex justify-between items-center mb-2"><span class="font-semibold">${sub}</span><button data-sub-name="${sub}" class="delete-sub-btn p-1 text-gray-400 hover:text-red-600"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div><div class="grid grid-cols-2 gap-2 text-sm">${(currentBudget.categories || []).map(cat => `<div><input type="checkbox" id="sub-${sub}-${cat.id}" data-sub-name="${sub}" data-cat-id="${cat.id}" class="mr-2" ${(currentBudget.subcategories[sub] || []).includes(cat.id) ? 'checked' : ''}><label for="sub-${sub}-${cat.id}">${cat.name}</label></div>`).join('')}</div></li>`).join(''); modal.innerHTML = `<div class="custom-modal-content"><h2 class="custom-modal-title">Manage Subcategories</h2><ul class="space-y-4 mb-4 max-h-60 overflow-y-auto">${subcategoriesList}</ul><form id="addSubcategoryForm" class="flex gap-2"><input type="text" id="newSubcategoryName" class="form-input" placeholder="New Subcategory Name" required /><button type="submit" class="btn btn-purple">Add</button></form><div class="custom-modal-buttons justify-center"><button type="button" class="custom-modal-button custom-modal-cancel">Close</button></div></div>`; modal.querySelector('#addSubcategoryForm').onsubmit = async (e) => { e.preventDefault(); const newNameInput = document.getElementById('newSubcategoryName'); const newName = newNameInput.value.trim(); if (newName && !(currentBudget.subcategories || {})[newName]) { if (!currentBudget.subcategories) currentBudget.subcategories = {}; currentBudget.subcategories[newName] = []; await saveBudget(); renderSubcategories(); } newNameInput.value = ''; }; modal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => { checkbox.onchange = async (e) => { const subName = e.target.dataset.subName; const catId = e.target.dataset.catId; if (e.target.checked) { if (!((currentBudget.subcategories[subName] || []).includes(catId))) { currentBudget.subcategories[subName].push(catId); } } else { currentBudget.subcategories[subName] = (currentBudget.subcategories[subName] || []).filter(id => id !== catId); } await saveBudget(); }; }); modal.querySelectorAll('.delete-sub-btn').forEach(btn => { btn.onclick = async (e) => { const subName = e.currentTarget.dataset.subName; const confirmed = await showConfirmModal('Delete Subcategory?', `This will remove it from all transactions and categories.`); if (confirmed) { delete currentBudget.subcategories[subName]; (currentBudget.transactions || []).forEach(t => { if (t.subcategory === subName) t.subcategory = ''; }); await saveBudget(); renderSubcategories(); } }; }); modal.querySelector('.custom-modal-cancel').onclick = () => hideModal(modalId); }; renderSubcategories(); showModal(modalId); };
     document.getElementById('filterCategory').addEventListener('change', renderTransactionList);
     document.getElementById('filterPaymentMethod').addEventListener('change', renderTransactionList);
