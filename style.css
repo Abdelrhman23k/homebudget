@@ -169,17 +169,18 @@ body {
 .tab-list { 
     border-bottom: 2px solid #e5e7eb; 
     display: flex;
-    overflow-x: auto; /* Allow horizontal scrolling for tabs on small screens */
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
 }
-.tab-list::-webkit-scrollbar { display: none; } /* Hide scrollbar for Chrome, Safari, and Opera */
+.tab-list::-webkit-scrollbar { display: none; }
 .tab-button {
     padding: 0.75rem 1rem; font-weight: 600; color: #6b7280;
     border-bottom: 2px solid transparent;
     transition: color 0.3s ease, border-color 0.3s ease;
-    white-space: nowrap; /* Prevent tab text from wrapping */
-    flex-shrink: 0; /* Prevent tabs from shrinking */
+    white-space: nowrap; flex-shrink: 0;
+    background: none; border-top: none; border-left: none; border-right: none;
+    cursor: pointer;
 }
 @media (min-width: 640px) {
     .tab-list { justify-content: center; }
@@ -189,40 +190,11 @@ body {
 .tab-panel { display: none; padding-top: 1.5rem; }
 .tab-panel.active { display: block; }
 
-/* --- NEW ANIMATION STYLES --- */
-
-/* For staggering items into view */
-.will-animate {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-}
-.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* For flashing new transaction items */
-@keyframes flash-green {
-    0% { background-color: #d1fae5; } /* Tailwind green-100 */
-    100% { background-color: #ffffff; }
-}
-
-.flash-enter {
-    animation: flash-green 1.5s ease-out forwards;
-}
-
-/* For list item enter/exit animations */
-.list-item {
-    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-.list-item-enter {
-    opacity: 0;
-    transform: translateX(-20px);
-}
-
-.list-item-exit-active {
-    opacity: 0;
-    transform: scale(0.9);
-}
+/* --- ANIMATION STYLES --- */
+.will-animate { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
+.is-visible { opacity: 1; transform: translateY(0); }
+@keyframes flash-green { 0% { background-color: #d1fae5; } 100% { background-color: #ffffff; } }
+.flash-enter { animation: flash-green 1.5s ease-out forwards; }
+.list-item { transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+.list-item-enter { opacity: 0; transform: translateX(-20px); }
+.list-item-exit-active { opacity: 0; transform: scale(0.9); }
